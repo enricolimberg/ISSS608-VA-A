@@ -5,7 +5,7 @@ author: "Enrico Limberg"
 
 # 1. A Layered Grammar of Graphics: ggplot2 methods
 
-## 1.1 Learning Outcomes 
+## 1.1 Learning Outcomes
 
 In this chapter, you will learn the basic principles and essential components of ggplot2. At the same time, you will gain hands-on experience on using these components to plot statistical graphics based on the principle of Layered Grammar of Graphics. By then end of this chapter you will be able to apply the essential graphical elements provided by ggplot2 to create elegant and yet functional statistical graphics.
 
@@ -59,7 +59,7 @@ There are two principles in Grammar of Graphics, they are:
 
 A good grammar of graphics will allow us to gain insight into the composition of complicated graphics, and reveal unexpected connections between seemingly different graphics (Cox 1978). It also provides a strong foundation for understanding a diverse range of graphics. Furthermore, it may also help guide us on what a well-formed or correct graphic looks like, but there will still be many grammatically correct but nonsensical graphics.
 
-### 1.4.1 A Layered Grammar of Graphics 
+### 1.4.1 A Layered Grammar of Graphics
 
 ggplot2 is an implementation of Leland Wilkinson’s Grammar of Graphics. Figure below shows the seven grammars of ggplot2.
 
@@ -389,10 +389,7 @@ ggplot(data=exam_data,
 
 The *Coordinates* functions map the position of objects onto the plane of the plot. There are a number of different possible coordinate systems to use, they are:
 
-\- \[\`coord_cartesian()\`\](https://ggplot2.tidyverse.org/reference/coord_cartesian.html): the default cartesian coordinate systems, where you specify x and y values (e.g. allows you to zoom in or out).
-- \[\`coord_flip()\`\](https://ggplot2.tidyverse.org/reference/coord_flip.html): a cartesian system with the x and y flipped.
-- \[\`coord_fixed()\`\](https://ggplot2.tidyverse.org/reference/coord_fixed.html): a cartesian system with a "fixed" aspect ratio (e.g. 1.78 for a "widescreen" plot).
-- \[\`coord_quickmap()\`\](https://ggplot2.tidyverse.org/reference/coord_map.html): a coordinate system that approximates a good aspect ratio for maps.
+\- \[\`coord_cartesian()\`\](https://ggplot2.tidyverse.org/reference/coord_cartesian.html): the default cartesian coordinate systems, where you specify x and y values (e.g. allows you to zoom in or out). - \[\`coord_flip()\`\](https://ggplot2.tidyverse.org/reference/coord_flip.html): a cartesian system with the x and y flipped. - \[\`coord_fixed()\`\](https://ggplot2.tidyverse.org/reference/coord_fixed.html): a cartesian system with a "fixed" aspect ratio (e.g. 1.78 for a "widescreen" plot). - \[\`coord_quickmap()\`\](https://ggplot2.tidyverse.org/reference/coord_map.html): a coordinate system that approximates a good aspect ratio for maps.
 
 ### **1.10.1 Working with Coordinate**
 
