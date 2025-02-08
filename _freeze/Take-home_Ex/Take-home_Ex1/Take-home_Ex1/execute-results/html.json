@@ -1,0 +1,15 @@
+{
+  "hash": "379b3dc70b7ee911b9aa1b0aa1f5c563",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Take-home Exercise 1\"\nauthor: \"Enrico Limberg\"\ndate: \"February 1, 2025\"\ndate-modified: \"last-modified\"\nexecute:\n    echo: true\n    eval: true\n    warning: false\n    freeze: true\n---\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(tidyverse,ggplot2)\n```\n:::\n\n::: {.cell}\n\n```{.r .cell-code}\nhealth <- read_csv(\"data/japan_heart_attack_dataset.csv\")\n```\n:::\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

@@ -10,3 +10,10 @@ execute:
     freeze: true
 ---
 
+```{r}
+pacman::p_load(tidyverse,ggplot2)
+```
+
+```{r}
+health <- read_csv("data/japan_heart_attack_dataset.csv")
+```

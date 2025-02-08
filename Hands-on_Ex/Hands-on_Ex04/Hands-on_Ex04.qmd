@@ -1314,8 +1314,7 @@ funnel_plot(
 )
 ```
 
-A funnel plot object with 267 points of which 7 are outliers.
-Plot is adjusted for overdispersion.
+A funnel plot object with 267 points of which 7 are outliers. Plot is adjusted for overdispersion.
 
 Things to learn from the code chunk above. + **data_type** argument is used to change from default “SR” to “PR” (i.e. proportions). + **xrange** and **yrange** are used to set the range of x-axis and y-axis
 
@@ -1339,8 +1338,7 @@ funnel_plot(
 )
 ```
 
-A funnel plot object with 267 points of which 7 are outliers.
-Plot is adjusted for overdispersion.
+A funnel plot object with 267 points of which 7 are outliers. Plot is adjusted for overdispersion.
 
 Things to learn from the code chunk above.
 

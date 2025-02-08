@@ -411,5 +411,12 @@
     "title": "Hands-on_Ex04",
     "section": "8.6 References",
     "text": "8.6 References\n\nfunnelPlotR package.\n\n\n\nFunnel Plots for Indirectly-standardised ratios.\nChanging funnel plot options\nggplot2 package."
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex1/Take-home_Ex1.html",
+    "href": "Take-home_Ex/Take-home_Ex1/Take-home_Ex1.html",
+    "title": "Take-home Exercise 1",
+    "section": "",
+    "text": "pacman::p_load(tidyverse,ggplot2)\n\n\nhealth &lt;- read_csv(\"data/japan_heart_attack_dataset.csv\")"
   }
 ]
