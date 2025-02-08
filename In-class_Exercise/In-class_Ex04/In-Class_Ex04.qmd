@@ -1,0 +1,71 @@
+---
+title: "In-Class_Ex04"
+author: "Enrico Limberg"
+date: "February 1, 2025"
+date-modified: "last-modified"
+execute:
+    echo: true
+    eval: true
+    warning: false
+    freeze: true
+---
+
+# Getting started
+
+## Installing and Loading R Packages
+
+```{r}
+pacman::p_load(haven, SmartEDA, tidyverse, tidymodels, ggridges, colorspace, ggstatsplot, ggdist)
+```
+
+## Import Data
+
+```{r}
+exam_data <- read_csv("data/Exam_data.csv")
+```
+
+::: panel-tabset
+## The plot
+
+```{r, echo=FALSE}
+ggplot(data = exam_data,
+       aes(x = ENGLISH, 
+           y = CLASS)) +
+  geom_boxplot()
+```
+
+## The code chunk
+
+```{r, eval=FALSE}
+ggplot(data = exam_data,
+       aes(x = ENGLISH, 
+           y = CLASS)) +
+  geom_boxplot()
+```
+:::
+
+```{r}
+churn_telecom <- read_sas("data/churn_telecom.sas7bdat") %>% 
+  mutate(CHURN_FLG = factor(
+    CHURN_FLG,
+    levels = c("1","0"),
+    labels = c("churn", "Non-Churn")))
+```
+
+## Visualising the target variable
+
+::: panel-tabset
+## The plot
+
+```{r, echo=FALSE}
+ggplot(data = churn_telecom,
+       aes(x = CHURN_FLG)) + geom_bar()
+```
+
+## The code chunk
+
+```{r, eval=FALSE}
+ggplot(data = churn_telecom,
+       aes(x = CHURN_FLG)) + geom_bar()
+```
+:::

@@ -1,0 +1,17 @@
+{
+  "hash": "39eef116923097f6edbfe8c679abcb9d",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"In-Class_Ex04\"\nauthor: \"Enrico Limberg\"\ndate: \"February 1, 2025\"\ndate-modified: \"last-modified\"\nexecute:\n    echo: true\n    eval: true\n    warning: false\n    freeze: true\n---\n\n\n\n# Getting started\n\n## Installing and Loading R Packages\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(haven, SmartEDA, tidyverse, tidymodels, ggridges, colorspace, ggstatsplot, ggdist)\n```\n:::\n\n\n\n## Import Data\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nexam_data <- read_csv(\"data/Exam_data.csv\")\n```\n:::\n\n\n\n::: panel-tabset\n## The plot\n\n\n\n::: {.cell}\n::: {.cell-output-display}\n![](In-Class_Ex04_files/figure-html/unnamed-chunk-3-1.png){width=672}\n:::\n:::\n\n\n\n## The code chunk\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nggplot(data = exam_data,\n       aes(x = ENGLISH, \n           y = CLASS)) +\n  geom_boxplot()\n```\n:::\n\n\n:::\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nchurn_telecom <- read_sas(\"data/churn_telecom.sas7bdat\") %>% \n  mutate(CHURN_FLG = factor(\n    CHURN_FLG,\n    levels = c(\"1\",\"0\"),\n    labels = c(\"churn\", \"Non-Churn\")))\n```\n:::\n\n\n\n## Visualising the target variable\n\n::: panel-tabset\n## The plot\n\n\n\n::: {.cell}\n::: {.cell-output-display}\n![](In-Class_Ex04_files/figure-html/unnamed-chunk-6-1.png){width=672}\n:::\n:::\n\n\n\n## The code chunk\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nggplot(data = churn_telecom,\n       aes(x = CHURN_FLG)) + geom_bar()\n```\n:::\n\n\n:::\n",
+    "supporting": [
+      "In-Class_Ex04_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

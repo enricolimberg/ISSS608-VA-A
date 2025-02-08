@@ -500,8 +500,8 @@ Importing \[Exam.csv\] data by using appropriate tidyverse package.
 :::
 
 ```{r}
-exam_data <- read_csv("data/Exam_data.csv")
-exam_data
+exam <- read_csv("data/Exam_data.csv")
+exam
 ```
 
 ### **6.3.3 One-sample test: *gghistostats()* method**
