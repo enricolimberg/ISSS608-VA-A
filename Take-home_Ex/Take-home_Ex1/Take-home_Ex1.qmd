@@ -295,7 +295,7 @@ ggplotly(p5)
 
 ## 4.7 MAP Distribution in Youth vs. Adult and Heart Attack Occurrence
 
-### 4.7.1 
+### 4.7.1
 
 ```{r}
 heart_attack_yes <- heart_attack_yes %>%
