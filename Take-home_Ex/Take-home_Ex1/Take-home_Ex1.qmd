@@ -30,16 +30,21 @@ The dataset provides a detailed look at heart attack incidents in Japan, highlig
 
 The insights from this analysis will benefit several groups. Data scientists and analysts can use the findings for predictive modeling. Healthcare professionals can apply this information to better address age-specific health risks. Policymakers can use the insights to create effective public health initiatives, while educators and researchers can draw on the data for academic studies.
 
-3.  Getting Started
+# 3. Getting Started
 
-3.1 Importing the tools
+## 3.1 Importing the tools
 
 The R packages that are going to be used for this exercises are:
 
 -   **tidyverse** to perform data science task such as reading rectangular data, tidying up data, manipulating data and creating graphics.
+-   **ggplot2** to create data-driven graphics.
+-   **ggridges** (a ggplot2 extension) to plot ridgeline plots.
+-   **ggdist** (a ggplot2 extension) to visualize distribution and uncertainty.
+-   **ggpubr** to create publication-ready plots.
+-   **plotly** to create interactive web-based graphs, which will convert [**ggplot2**]{.underline} figures into a plotly object.
 
 ```{r}
-pacman::p_load(tidyverse,ggplot2,ggridges,ggdist,ggpubr)
+pacman::p_load(tidyverse,ggplot2,ggridges,ggdist,ggpubr,plotly,patchwork,dplyr)
 ```
 
 ```{r}
@@ -48,9 +53,12 @@ library(ggplot2)
 library(ggridges)
 library(ggdist)
 library(ggpubr)
+library(plotly)
+library(patchwork)
+library(dplyr)
 ```
 
-3.2 Importing Data
+## 3.2 Importing Data
 
 The dataset that are used for this take-home exercise will be the *`japan_heart_attack_dataset.csv`*, which is in the csv file format.
 
@@ -58,54 +66,301 @@ The dataset that are used for this take-home exercise will be the *`japan_heart_
 health <- read_csv("data/japan_heart_attack_dataset.csv")
 ```
 
-3.3 Creating an Agre Group Column
+The dataset used for this analysis consists of 30,000 individual records, each providing a comprehensive range of health-related variables such as age, gender, cholesterol levels, blood pressure, heart rate, and lifestyle factors like smoking history, physical activity, and alcohol consumptions. It allows for detailed examination of the relationship between these factors and the occurrence of heart attacks in Japan. By comparing youth group (18-35 years old) and adult (36+ years) populations, we aim to uncover the key differences in heart attack risk factor, providing valuable insights on how lifestyle choices and physical metrics vary across age groups and influence cardiovascular health.
+
+## 3.3 Data Cleaning
+
+### 3.3.1 Remove the "Extra_Column" column
+
+The dataset consists of 15 extra columns that do not serve any purpose, thus we need to remove those columns for data cleaning purpose.
+
+```{r}
+health_clean <- health %>% 
+  select(-starts_with("Extra_Column"))
+health_clean
+```
+
+### 3.3.2 Check and remove and duplicated data
+
+```{r}
+sum(duplicated(health))
+health_clean <- health %>%
+  distinct()
+health_clean
+```
+
+### 3.3.3 Check and remove any missing values
+
+```{r}
+sum(is.na(health))
+```
+
+```{r}
+colSums(is.na(health))
+```
+
+```{r}
+health[!complete.cases(health),]
+```
+
+## 3.4 Creating an Age Group Column
 
 ```{r}
 health <- health %>%
   mutate(Age_Group = case_when(
-    Age < 40 ~ "Youth",
-    Age >= 40 ~ "Adult"
+    Age < 36 ~ "Youth",
+    Age >= 36 ~ "Adult"
   ))
 
 ```
 
-4.0 Data Visualization
-
-4.1 Distribution of Heart Attacks by Age Group
+## 3.5 Count of Heart Attack Occurence
 
 ```{r}
-ggplot(health, aes(x = Age, fill = Age_Group)) +
-  geom_histogram(bins = 30, alpha = 0.7, position = "identity") +
-  labs(title = "Heart Attack Distribution by Age", x = "Age", y = "Count") +
+heart_attack_counts <- health %>% 
+  count(Heart_Attack_Occurrence)
+```
+
+```{r}
+heart_attack_counts
+```
+
+The dataset contains **2,964 cases** where a heart attack occurred (`Yes`), compared to **27,036 cases** where no heart attack occurred (`No`).
+
+For this analysis, we will **focus only on the "Yes" cases**, as our primary goal is to examine the relationship between health and lifestyle factors that contribute to heart attacks. By analyzing individuals who have experienced a heart attack, we aim to compare risk factors between the **youth group (18-35 years old) and the adult group (36+ years)**. This approach allows us to identify key differences in cardiovascular risk factors across age groups, providing insights into how lifestyle choices and physiological metrics influence heart attack occurrences in Japan.
+
+## 3.6 Filtering Dataset for Heart Attack Cases
+
+This step isolates only the records where a heart attack has occurred (`Yes`), allowing for a focused analysis on the contributing health and lifestyle factors.
+
+```{r}
+heart_attack_yes <- health %>% filter(Heart_Attack_Occurrence == "Yes")
+```
+
+```{r}
+heart_attack_yes
+```
+
+# 4.0 Data Visualization
+
+## 4.1 Overview of Heart Attack Occurrences
+
+Before focusing on specific cases, we begin with an overview of heart attack occurrences in the dataset, segmented by **age group** and **gender**. Out of 30,000 individuals, 2,964 cases (9.88%) reported a heart attack (`Yes`), while 27,036 cases (90.12%) did not (`No`). This initial comparison, broken down by **youth (18-35 years old)** and **adult (36+ years old)** populations as well as **gender**, provides context on the distribution of heart attack cases across different demographics. By visualizing these groups, we can better understand how heart attack prevalence varies by age and gender before narrowing our analysis to the factors that contribute to their occurrence.
+
+```{R}
+p <- ggplot(data = health, aes(x = Gender, fill = Age_Group)) + 
+  geom_bar(position = "dodge") +
+  facet_wrap(~ Heart_Attack_Occurrence) +
+  ggtitle("Heart Attack Occurrence by Gender and Age Group") +
+  xlab("Gender") +
+  ylab("Count") +
   theme_minimal()
 
 ```
 
-4.2 Cholesterol Levels in Youth vs Adults
+```{r}
+ggplotly(p)
+```
+
+Heart attack occurrences are more frequent among adults, with **males** (1,114) having a slightly higher incidence than **females** (1,016). In the youth group, the numbers are almost identical, with **males** (421) slightly surpassing **females** (413). These patterns suggest that adult males may face a higher risk, indicating potential gender differences in cardiovascular health.
+
+## **4.2 Cholesterol Levels in Youth vs Adults with Heart Attack Occurrence**
 
 ```{r}
-ggplot(health, aes(x = Age_Group, y = Cholesterol_Level, fill = Age_Group)) +
-  geom_boxplot() +
-  labs(title = "Cholesterol Levels by Age Group", x = "Age Group", y = "Cholesterol") +
+p1 <- ggplot(heart_attack_yes, aes(x = Age_Group, y = Cholesterol_Level, fill = Age_Group)) + 
+  geom_boxplot() + 
+  facet_wrap(~ Heart_Attack_Occurrence) + 
+  ggtitle("Cholesterol Levels in Youth vs Adults (Heart Attack Yes)") + 
+  xlab("Age Group") + 
+  ylab("Cholesterol Level") + 
+  theme_minimal()
+```
+
+```{r}
+ggplotly(p1)
+```
+
+::: callout-note
+## Key Insights:
+
+-   Adults exhibit a wider range of cholesterol levels, with both higher and lower extremes. This variation may indicate that some adults are at higher risk due to extremely elevated cholesterol, while others may have healthier levels, potentially affecting heart attack occurrence differently within this group.
+
+-   Youth show more consistent cholesterol levels within a narrower range, suggesting less variation in cardiovascular risk factors in this age group. This could imply that younger individuals with high cholesterol are generally more likely to experience heart-related issues, as the spread in this group is smaller.
+:::
+
+## 4.3 Heart Attack Occurrence: Urban vs. Rural and Youth vs. Adult Comparison
+
+```{r}
+p2 <- ggplot(heart_attack_yes, aes(x = Age_Group, fill = Age_Group)) + 
+  geom_bar(position = "stack") + 
+  facet_wrap(~ Region) + 
+  ggtitle("Heart Attack Occurrence by Age Group and Region") + 
+  xlab("Age Group (Youth vs Adult)") + 
+  ylab("Count of Heart Attack Cases") + 
+  scale_fill_manual(values = c("Youth" = "skyblue", "Adult" = "orange")) + 
+  theme_minimal()
+```
+
+```{r}
+ggplotly(p2)
+```
+
+::: callout-note
+## Key Insights:
+
+In urban regions, the number of heart attack cases is notably higher for both youth and adults compared to rural regions. This suggests that urban living may be associated with an increased risk of heart attack, potentially due to factors such as higher stress, lifestyle habits, or environmental conditions.
+:::
+
+## 4.4 BMI Distribution in Youth vs Adult and Heart Attack Occurrence
+
+```{r}
+p3 <- ggplot(heart_attack_yes, aes(x = BMI, fill = Heart_Attack_Occurrence)) + 
+  geom_histogram(bins = 30, alpha = 0.6) + 
+  facet_wrap(~ Age_Group) + 
+  ggtitle("BMI Distribution by Age Group and Heart Attack Occurrence") + 
+  xlab("BMI") + 
+  ylab("Count") + 
+  scale_fill_manual(values = c("Yes" = "red", "No" = "green")) + 
+  theme_minimal() + 
+  geom_vline(data = subset(heart_attack_yes, Age_Group == "Youth"), 
+             aes(xintercept = median(BMI)), 
+             color = "blue", linetype = "dashed", linewidth = 1) +
+  geom_vline(data = subset(heart_attack_yes, Age_Group == "Adult"), 
+             aes(xintercept = median(BMI)), 
+             color = "green", linetype = "dashed", linewidth = 1) +
+  theme(legend.position = "none")
+```
+
+```{r, fig.width=10, fig.height=5}
+ggplotly(p3)
+```
+
+::: callout-note
+## Key Insights:
+
+The analysis of BMI and heart attack occurrence in this dataset highlights that both higher BMI (indicating obesity) and lower BMI (indicating underweight) are likely to be associated with heart attack risk. While most of the heart attack cases are distributed around the median BMI, extremes at both ends of the spectrum should be noted as significant contributors to the risk of cardiovascular events.
+:::
+
+## 4.5 Alcohol Consumption in Youth vs. Adult and Heart Attack Occurrence
+
+```{r}
+p4 <- ggplot(heart_attack_yes, aes(x = Alcohol_Consumption, fill = Age_Group)) +
+  geom_bar(position = "dodge", stat = "count") +
+  facet_wrap(~ Heart_Attack_Occurrence) +
+  ggtitle("Alcohol Consumption in Youth vs. Adult and Heart Attack Occurrence") +
+  xlab("Alcohol Consumption Level") +
+  ylab("Count") +
+  scale_fill_manual(values = c("Youth" = "lightblue", "Adult" = "lightgreen")) +
+  theme_minimal()
+```
+
+```{r}
+ggplotly(p4)
+```
+
+::: callout-note
+## Key insights:
+
+-   **Moderate alcohol consumption** has the **highest** heart attack occurrence, with 841 adult cases and 305 youth cases. This suggests that moderate alcohol consumption might be associated with an increased risk of heart attack, especially for both youth and adults.
+
+-   **None alcohol consumption** has the **lowest** heart attack occurrence, with 214 adult cases and 98 youth cases. This could indicate that non-drinkers may experience a lower risk of heart attack, but this needs further investigation to rule out other contributing factors.
+
+-   The data highlights that **alcohol consumption** appears to play a significant role in **heart attack occurrence**, with moderate alcohol consumption being a potential risk factor across both age groups.
+:::
+
+## 4.6 Diet Quality in Youth vs. Adult and Heart Attack Occurrence
+
+```{r}
+p5 <- ggplot(heart_attack_yes, aes(x = Diet_Quality, fill = Diet_Quality)) + 
+  geom_bar(position = "dodge") + 
+  facet_wrap(~ Age_Group) + 
+  ggtitle("Diet Quality by Youth vs. Adult and Heart Attack Occurrence") + 
+  xlab("Diet Quality") + 
+  ylab("Count of Heart Attack Occurrence") + 
+  scale_fill_manual(values = c("Poor" = "red", "Average" = "yellow", "Good" = "green")) + 
   theme_minimal()
 
 ```
 
-4.3 Blood Pressure vs. Heart Attack Risk
+```{r}
+ggplotly(p5)
+```
+
+::: callout-note
+## Key insights:
+
+-   Overall, the Good diet quality group shows the highest number of heart attack occurrences in both youth and adults, suggesting that a Good diet alone may not be protective against heart attack in individuals already at risk.
+-   The Average diet quality category also indicates a significant number of heart attack occurrences, reinforcing that diet quality alone might not be the primary factor in preventing heart attacks.
+:::
+
+## 4.7 MAP Distribution in Youth vs. Adult and Heart Attack Occurrence
+
+### 4.7.1 
 
 ```{r}
-health <- health %>%
+heart_attack_yes <- heart_attack_yes %>%
+  mutate(MAP = Diastolic_BP + (1/3) * (Systolic_BP - Diastolic_BP))
+```
+
+```{r}
+p7 <- ggplot(health_yes, aes(x = Systolic_BP, y = Diastolic_BP, color = Age_Group)) +
+  geom_point(alpha = 0.5) +
+  labs(title = "Systolic vs. Diastolic Blood Pressure by Age Group",
+       x = "Systolic Blood Pressure", y = "Diastolic Blood Pressure") +
+  theme_minimal()
+ggplotly(p7)
+```
+
+```{r}
+p7 <- ggplot(heart_attack_yes, aes(x = MAP, fill = Age_Group)) +
+  geom_density(alpha = 0.5) +
+  ggtitle("MAP Distribution by Age Group in Heart Attack Cases") +
+  xlab("Mean Arterial Pressure (MAP)") +
+  ylab("Density") +
+  scale_fill_manual(values = c("Youth" = "blue", "Adult" = "red")) +
+  theme_minimal()
+ggplotly(p7)
+```
+
+```{r}
+heart_attack_yes %>%
+  group_by(Age_Group) %>%
+  summarise(
+    Median_MAP = median(MAP, na.rm = TRUE),
+    Mean_MAP = mean(MAP, na.rm = TRUE)
+  )
+```
+
+```{r}
+p8 <- ggplot(heart_attack_yes, aes(x = MAP, fill = Age_Group)) +
+  geom_density(alpha = 0.5) +
+  geom_vline(data = heart_attack_yes %>%
+               group_by(Age_Group) %>%
+               summarise(Median_MAP = median(MAP, na.rm = TRUE)),
+             aes(xintercept = Median_MAP, color = Age_Group),
+             linetype = "dashed", size = 1) +
+  ggtitle("MAP Distribution by Age Group in Heart Attack Cases") +
+  xlab("Mean Arterial Pressure (MAP)") +
+  ylab("Density") +
+  scale_fill_manual(values = c("Youth" = "blue", "Adult" = "red")) +
+  scale_color_manual(values = c("Youth" = "blue", "Adult" = "red")) +
+  theme_minimal() +
+  theme(legend.position = "top")
+ggplotly(p8)
+```
+
+```{r}
+health_yes <- heart_attack_yes %>%
   mutate(MAP = (Systolic_BP + (2 * Diastolic_BP)) / 3)
 
 ```
 
 ```{r}
-ggplot(health, aes(x = Systolic_BP, y = Diastolic_BP, color = Age_Group)) +
-  geom_point(alpha = 0.5) +
-  labs(title = "Systolic vs. Diastolic Blood Pressure by Age Group",
-       x = "Systolic Blood Pressure", y = "Diastolic Blood Pressure") +
-  theme_minimal()
 
+```
+
+```{r}
+p9 + MAP
 ```
 
 ```{r}
@@ -116,179 +371,6 @@ ggplot(health, aes(x = Age_Group, y = MAP, fill = Age_Group)) +
   theme_minimal()
 ```
 
-## Checking Distribution of Hypertension Among Heart Attack Patients
-
-This will show how many people with and without hypertension had heart attacks. If more people with hypertension have heart attacks, it suggest a strong correlation between hypertension and heart disease.
-
 ```{r}
-ggplot(health, aes(x = Hypertension_History, fill = factor(Heart_Attack_Occurrence))) +
-  geom_bar(position = "dodge") +
-  labs(title = "Hypertension History vs. Heart Attack Risk",
-       x = "Hypertension History", y = "Count",
-       fill = "Heart Attack (Yes=1, No=0)") +
-  theme_minimal()
-
-```
-
-```{r}
-health %>%
-  group_by(Hypertension_History) %>%
-  summarise(Heart_Attack_Occurrence = mean(Heart_Attack_Occurrence)) %>%
-  ggplot(aes(x = Hypertension_History, y = Heart_Attack_Occurrence, fill = Hypertension_History)) +
-  geom_col() +
-  labs(title = "Heart Attack Proportion by Hypertension Status",
-       x = "Hypertension History", y = "Heart Attack Rate") +
-  theme_minimal()
-
-```
-
-```{r}
-chisq.test(table(health$Hypertension_History, health$Heart_Attack_Occurrence))
-
-```
-
-```{r}
-youth_data <- health %>% filter(Age_Group == "Youth")
-adult_data <- health %>% filter(Age_Group == "Adult")
-
-chisq.test(table(youth_data$Hypertension_History, youth_data$Heart_Attack_Occurrence)) 
-chisq.test(table(adult_data$Hypertension_History, adult_data$Heart_Attack_Occurrence)) 
-
-```
-
-This chart compares heart attack occurrence rates between the youth and adult age groups. It helps identify which age group experiences more heart attack cases.
-
-```{r}
-ggplot(health, aes(x = Age_Group, fill = Heart_Attack_Occurrence)) +
-  geom_bar(position = "dodge") +
-  labs(title = "Heart Attack Occurrence by Age Group",
-       x = "Age Group",
-       y = "Count of Heart Attacks")
-
-```
-
-```{r}
-ggplot(health, aes(x = Age_Group, y = Cholesterol_Level)) +
-  geom_boxplot() +
-  labs(title = "Cholesterol Levels by Age Group",
-       x = "Age Group",
-       y = "Cholesterol Level")
-```
-
-```{r}
-ggplot(health, aes(x = Diet_Quality, fill = Heart_Attack_Occurrence)) +
-  facet_wrap(~ Age_Group) +
-  geom_bar(position = "dodge") +
-  labs(title = "Diet Quality vs. Heart Attack by Age Group",
-       x = "Diet Quality",
-       y = "Count")
-
-```
-
-```{r}
-ggplot(health, aes(x = Family_History, fill = Heart_Attack_Occurrence)) +
-  facet_wrap(~ Age_Group) +
-  geom_bar(position = "dodge") +
-  labs(title = "Family History vs. Heart Attack by Age Group",
-       x = "Family History",
-       y = "Count")
-
-```
-
-```{r}
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-
-cholesterol_summary <- health %>%
-  group_by(Age_Group) %>%
-  summarise(
-    mean_chol = mean(Cholesterol_Level, na.rm = TRUE),
-    sd_chol = sd(Cholesterol_Level, na.rm = TRUE),
-    n = n(),
-    lower_ci = mean_chol - qt(0.975, df = n-1) * sd_chol / sqrt(n),  # 95% CI lower
-    upper_ci = mean_chol + qt(0.975, df = n-1) * sd_chol / sqrt(n)   # 95% CI upper
-  )
-
-# Funnel plot with confidence intervals and trend line
-ggplot(cholesterol_summary, aes(x = Age_Group, y = mean_chol)) +
-  geom_point(aes(color = mean_chol), size = 4) +  # Points for the means
-  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +  # Confidence intervals
-  geom_smooth(aes(y = mean_chol), method = "loess", se = FALSE, color = "blue", size = 1.2) +  # Trendline
-  coord_flip() +
-  ggtitle("Funnel Plot of Cholesterol Levels by Age Group") +
-  theme(plot.title = element_text(hjust = 0.5),
-        axis.title.y = element_text(angle = 360, vjust = 0.5, hjust = 1)) +
-  theme_minimal()
-
-```
-
-```{r}
-library(ggplot2)
-library(dplyr)
-
-# Faceted bar plot comparing Smoking History vs Heart Attack Occurrence by Age Group
-ggplot(health, aes(x = Smoking_History, fill = Heart_Attack_Occurrence)) +
-  geom_bar(position = "fill") +
-  facet_wrap(~ Age_Group) +
-  labs(title = "Smoking History and Heart Attack Occurrence by Age Group",
-       y = "Proportion of Heart Attack Occurrence",
-       x = "Smoking History") +
-  scale_fill_manual(values = c("No" = "lightblue", "Yes" = "darkred")) +
-  theme_minimal()
-
-```
-
-```{r}
-funnel_data <- health %>%
-  filter(!is.na(Heart_Attack_Occurrence), !is.na(Age_Group)) %>%
-  group_by(Age_Group) %>%
-  summarise(
-    num_heart_attack = sum(Heart_Attack_Occurrence == "Yes", na.rm = TRUE),
-    total = n(),
-    prop_heart_attack = num_heart_attack / total
-  ) %>%
-  mutate(
-    lower_ci = prop_heart_attack - 1.96 * sqrt((prop_heart_attack * (1 - prop_heart_attack)) / total),
-    upper_ci = prop_heart_attack + 1.96 * sqrt((prop_heart_attack * (1 - prop_heart_attack)) / total)
-  )
-
-```
-
-```{r}
-funnel_data <- funnel_data %>%
-  mutate(
-    prop_heart_attack = pmin(pmax(prop_heart_attack, 0.001), 0.05),  # Cap proportions between 0.001 and 0.05
-    lower_ci = pmin(pmax(lower_ci, 0.001), 0.05),  # Cap lower confidence interval
-    upper_ci = pmin(pmax(upper_ci, 0.001), 0.05)   # Cap upper confidence interval
-  )
-
-```
-
-```{r}
-funnel_data <- funnel_data %>%
-  filter(!is.na(lower_ci) & !is.na(upper_ci))
-
-```
-
-```{r}
-library(ggplot2)
-library(dplyr)
-
-# Plot the funnel plot for Heart Attack Proportions
-ggplot(funnel_data, aes(x = Age_Group, y = prop_heart_attack)) +
-  geom_point(aes(color = Age_Group), size = 4) +  # Points for proportions
-  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci), width = 0.2) +  # Confidence intervals
-  coord_flip() +  # Flip coordinates for better readability
-  scale_y_continuous(limits = c(0, 0.05)) +  # Set y-axis range (proportion)
-  scale_x_discrete(limits = c("Youth", "Adult")) +  # Set x-axis to Age Group
-  ggtitle("Funnel Plot: Heart Attack Occurrence by Age Group") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5))
-
-```
-
-```{r}
-memory.limit(size = 16000)  # Example to increase memory to 16GB (adjust as needed)
-
+check_collinearity(health)
 ```
