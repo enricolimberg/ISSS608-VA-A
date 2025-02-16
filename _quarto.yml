@@ -24,9 +24,9 @@ website:
     - text: "In-Class Exercise"
       menu: 
         - text: "In-Class Exercise 4"
-          href: "In-Class_Exercise/In-Class_Ex04/In-Class_Ex04.html"
+          href: "In-Class_Exercise/In-class_Ex04/In-Class_Ex04.html"
         - text: "In-Class Exercise 5"
-          href: "In-Class_Exercise/In-Class_Ex05a/In-class_Ex05a.html"
+          href: "In-Class_Exercise/In-class_Ex05a/In-class_Ex05a.html"
     right:
       - href: index.qmd
         text: Home
