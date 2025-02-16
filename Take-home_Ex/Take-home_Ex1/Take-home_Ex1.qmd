@@ -83,24 +83,24 @@ health_clean
 ### 3.3.2 Check and remove and duplicated data
 
 ```{r}
-sum(duplicated(health))
-health_clean <- health %>%
+sum(duplicated(health_clean))
+health_clean_final <- health_clean %>%
   distinct()
-health_clean
+health_clean_final
 ```
 
 ### 3.3.3 Check and remove any missing values
 
 ```{r}
-sum(is.na(health))
+sum(is.na(health_clean_final))
 ```
 
 ```{r}
-colSums(is.na(health))
+colSums(is.na(health_clean_final))
 ```
 
 ```{r}
-health[!complete.cases(health),]
+health_clean_final[!complete.cases(health_clean_final),]
 ```
 
 ## 3.4 Creating an Age Group Column
@@ -108,7 +108,7 @@ health[!complete.cases(health),]
 Since our analysis aims to compare heart attack risks between youth and adults in Japan, we need to categorize individuals into two age groups. This helps us analyze patterns in medical indicators, physical metrics, and lifestyle factors more effectively.
 
 ```{r}
-health <- health %>%
+health_clean_final <- health_clean_final %>%
   mutate(Age_Group = case_when(
     Age < 36 ~ "Youth",
     Age >= 36 ~ "Adult"
@@ -119,7 +119,7 @@ health <- health %>%
 ## 3.5 Count of Heart Attack Occurence
 
 ```{r}
-heart_attack_counts <- health %>% 
+heart_attack_counts <- health_clean_final %>% 
   count(Heart_Attack_Occurrence)
 ```
 
@@ -136,7 +136,7 @@ For this analysis, we will **focus only on the "Yes" cases**, as our primary goa
 This step isolates only the records where a heart attack has occurred (`Yes`), allowing for a focused analysis on the contributing health and lifestyle factors.
 
 ```{r}
-heart_attack_yes <- health %>% filter(Heart_Attack_Occurrence == "Yes")
+heart_attack_yes <- health_clean_final %>% filter(Heart_Attack_Occurrence == "Yes")
 ```
 
 ```{r}
@@ -150,17 +150,13 @@ heart_attack_yes
 Before focusing on specific cases, we begin with an overview of heart attack occurrences in the dataset, segmented by **age group** and **gender**. Out of 30,000 individuals, 2,964 cases (9.88%) reported a heart attack (`Yes`), while 27,036 cases (90.12%) did not (`No`). This initial comparison, broken down by **youth (18-35 years old)** and **adult (36+ years old)** populations as well as **gender**, provides context on the distribution of heart attack cases across different demographics. By visualizing these groups, we can better understand how heart attack prevalence varies by age and gender before narrowing our analysis to the factors that contribute to their occurrence.
 
 ```{r}
-p <- ggplot(data = health, aes(x = Gender, fill = Age_Group)) + 
+p <- ggplot(data = health_clean_final, aes(x = Gender, fill = Age_Group)) + 
   geom_bar(position = "dodge") +
   facet_wrap(~ Heart_Attack_Occurrence) +
   ggtitle("Heart Attack Occurrence by Gender and Age Group") +
   xlab("Gender") +
   ylab("Count") +
   theme_minimal()
-
-```
-
-```{r}
 ggplotly(p)
 ```
 
