@@ -1,0 +1,11 @@
+---
+title: "Take-home_Ex2"
+author: "Enrico Limberg"
+date: "February 26, 2025"
+date-modified: "last-modified"
+execute:
+    echo: true
+    eval: true
+    warning: false
+    freeze: true
+---
