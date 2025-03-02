@@ -1,6 +1,12 @@
 ---
 title: "In-class_Ex07"
 author: "Enrico Limberg"
+date: "March 01, 2025"
+execute:
+    echo: true
+    eval: true
+    warning: false
+    freeze: true
 ---
 
 # 1.0 Getting Started
