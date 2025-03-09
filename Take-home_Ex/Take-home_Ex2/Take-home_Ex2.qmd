@@ -9,3 +9,647 @@ execute:
     warning: false
     freeze: true
 ---
+
+# 1.0 Overview
+
+## 1.1 Background
+
+Since **Donald Trump** assumed office as the President of the United States on January 20, 2025, **global trade has become a key focus of attention.** Analyzing Singapore's international trade patterns from 2015 onwards is crucial for understanding the impact of economic and political shifts on trade relationships. This take-home exercise offers the **opportunity to apply data visualization techniques** to uncover insights into these evolving trends.
+
+## 1.2 Objective
+
+**The objective of this exercise is to:**
+
+1.  Extract and prepare Singapore's Merchandise Trade by Region/Market data from DOS.
+2.  Critique three existing visualizations from DOS, highlighting their strengths and weaknesses.
+3.  Create improved visualizations using ggplot2 and other R packages.
+4.  Perform time-series analysis or forecasting to analyze trends in Singapore's international trade.
+5.  Present findings in a structured Quarto HTML document, then publish it on Netlify.
+
+# 2.0 Data Overview
+
+## 2.1 Dataset Description
+
+The dataset used in this analysis provides a comprehensive view of Singapore's Merchandise Trade by Region/Market since 2015. It includes detailed records of imports and exports across multiple global regions, categorized by time periods The dataset allows for an in-depth examination of Singapore's trade relationship, identifying trends, fluctuations, and potential impacts of global economic events on trade patterns.
+
+Key variables include:
+
+-   **Region/Country:** The geographical classification of trade partners.
+
+-   **Date:** The time period (monthly data points) for tracking trade changes.
+
+-   **Imports:** The total value of goods brought into Singapore from a specific region.
+
+-   **Exports:** The total value of goods sent from Singapore to a specific region.
+
+This dataset provides an ideal foundation for both **time-series analysis and time-series forecasting,** helps to uncover long-term trade trends and predict future patterns.
+
+## 2.2 Target Audience
+
+The insights derived from this dataset will be valuable to multiple stakeholders:
+
+-   **Economists & Policy Analysts:** To study the impact of global trade policies and economic shifts on Singapore's trade balance.
+
+-   **Business Analysts & Investors:** To identify key trade trends, market dependencies, and potential investment opportunities.
+
+-   **Academics & Researchers:** To explore trade relationships and perform data-driven studies on international commerce.
+
+-   **Government & Trade Authorities:** To make informed decisions regarding trade agreements and economic strategies.
+
+# 3.0 Getting Started
+
+## 3.1 Importing the tools
+
+The R packages that are going to be used for this exercises are:
+
+**General Data Visualization:**
+
+-   **tidyverse**: A collection of packages for data manipulation and visualization.
+
+-   **ggplot2**: For creating high-quality, data-driven visualizations.
+
+-   **ggridges**: For creating ridgeline plots to visualize distributions.
+
+-   **ggdist**: For visualizing distributions and uncertainty in data.
+
+-   **ggpubr**: Enhances ggplot2 for publication-ready plots.
+
+-   **plotly**: Converts ggplot2 plots into interactive web visuals.
+
+-   **dplyr**: Efficient tools for data manipulation and transformation.
+
+#### **Time-Series Analysis & Forecasting**
+
+-   **readxl**: For importing Excel files into R.
+
+<!-- -->
+
+-   **lubridate**: Simplifies date and time parsing and manipulation.
+
+<!-- -->
+
+-   **tsibble**: A data structure for tidy time-series data.
+
+<!-- -->
+
+-   **feasts**: Tools for feature extraction and statistical analysis of time-series data.
+
+<!-- -->
+
+-   **fable**: Framework for time-series forecasting, supporting models like ARIMA and ETS.
+
+<!-- -->
+
+-   **fable.prophet**: Integrates Facebook's prophet for time-series forecasting.
+
+<!-- -->
+
+-   **timetk**: Extends time-series visualization, feature engineering, and analysis.
+
+<!-- -->
+
+-   **modeltime**: A modern framework for machine learning-based time-series forecasting.
+
+<!-- -->
+
+-   **seasonal**: For performing seasonal adjustments in time-series data.
+
+<!-- -->
+
+-   **tidymodels**: A framework for modeling and machine learning, providing a consistent interface for model building and evaluation.
+
+These tools will enable us to perform **visual analytics**, redesign **existing trade visualizations**, and implement **time-series analysis** effectively.
+
+```{r}
+pacman::p_load(tidyverse,ggplot2,ggridges,ggdist,ggpubr,readxl,plotly,dplyr,lubridate,tsibble,feasts,fable,fable.prophet,timetk,modeltime,seasonal,timetk,tidymodels)
+```
+
+## 3.2 Importing Data
+
+The first dataset used for this take home exercise is provided in Excel format and is split into three different sheets:
+
+-   **T1 - Imports**
+
+-   **T2 - Domestic Exports**
+
+-   **T3 - Re-Exports**
+
+Since total exports consist of **domestic exports + re-exports**, we will import and process all three sheets.
+
+```{r}
+library(readxl)
+imports <- read_excel("data/traderegion.xlsx", sheet = "T1", skip=10)
+domestic_exports <- read_excel("data/traderegion.xlsx", sheet = "T2", skip=10)
+re_exports <- read_excel("data/traderegion.xlsx", sheet = "T3", skip=10)
+
+imports_clean <- imports[-c(161:200),]
+domestic_exports_clean <- domestic_exports[-c(161:200),]
+re_exports_clean <- re_exports[-c(161:200),]
+```
+
+## 3.3 Creating a total exports column
+
+### 3.3.1 Ensuring that column names for domestic exports and re-exports match
+
+```{r}
+colnames(domestic_exports_clean) <- colnames(re_exports_clean)
+```
+
+### 3.3.2 Convert numeric columns
+
+```{r}
+domestic_exports_clean <- domestic_exports_clean %>%
+  mutate(across(-`Data Series`, as.numeric))
+
+re_exports_clean <- re_exports_clean %>%
+  mutate(across(-`Data Series`, as.numeric))
+```
+
+### 3.3.3 Merge datasets on both sheets using left join to preserve all rows
+
+```{r}
+total_exports <- left_join(domestic_exports_clean, re_exports_clean, by = "Data Series", suffix = c("_domestic", "_re"))
+```
+
+### 3.3.4 Sum for domestic exports and re-exports
+
+```{r}
+total_exports <- total_exports %>%
+  mutate(across(matches("_domestic$"), ~ . + get(sub("_domestic$", "_re", cur_column())), .names = "{.col}_total")) %>%
+  select(`Data Series`, ends_with("_total")) %>%
+  rename_with(~ gsub("_(domestic|re)_total", "_total", .x))
+```
+
+```{r}
+total_exports
+```
+
+```{r}
+colnames(total_exports)[1] <- "Countries"
+```
+
+```{r}
+colnames(imports_clean)[1] <- "Countries"
+```
+
+### 3.3.5 Summarizing Total Trade Value by Country and Year
+
+#### 3.3.5.1 Summarizing Total Imports Value by Country and Year
+
+```{r}
+imports_modified <- imports_clean %>%
+  pivot_longer(cols = -Countries, names_to = "Period", values_to = "Value")
+```
+
+```{r}
+imports_modified$Period <- ym(imports_modified$Period)
+
+imports_modified <- imports_modified %>%
+  mutate(Value = as.numeric(Value))
+
+imports_modified <- imports_modified %>%
+  mutate(Year = year(Period))
+
+imports_modified <- imports_modified %>%
+  select(Year, Countries, Value)
+
+imports_modified <- imports_modified %>%
+  group_by(Countries, Year) %>%
+  summarise(Value = sum(Value, na.rm = TRUE))
+
+imports_modified
+```
+
+#### 3.3.5.2 Summarizing Total Exports Value by Country and Year
+
+```{r}
+totalexports_modified <- total_exports %>%
+  pivot_longer(cols = -Countries, names_to = "Period", values_to = "Value")
+```
+
+```{r}
+totalexports_modified$Period <- ym(totalexports_modified$Period)
+
+totalexports_modified <- totalexports_modified %>%
+  mutate(Value = as.numeric(Value))
+
+totalexports_modified <- totalexports_modified %>%
+  mutate(Year = year(Period))
+
+totalexports_modified <- totalexports_modified %>%
+  select(Year, Countries, Value)
+
+totalexports_modified <- totalexports_modified %>%
+  group_by(Countries, Year) %>%
+  summarise(Value = sum(Value, na.rm = TRUE))
+
+totalexports_modified
+```
+
+#### 3.3.5.3 Combining Total Imports and Total Exports for Total Trade Value by Country and Year
+
+```{r}
+colnames(imports_modified) <- colnames(totalexports_modified)
+```
+
+```{r}
+Total_Trade <- left_join(imports_modified, totalexports_modified, by = c("Countries", "Year"), suffix = c("_Imports", "_TotalExports"))
+```
+
+```{r}
+Total_Trade <- Total_Trade %>%
+  mutate(Total_Trade = Value_Imports + Value_TotalExports)
+Total_Trade
+```
+
+#### 3.3.5.4 Summarizing Total Import and Export by Commodity Section and Year
+
+```{r}
+merchandise_trade <- read_excel("data/tradecommodity.xlsx", skip = 10)
+colnames(merchandise_trade)[1] <- "Commodity Sections"
+
+time_columns <- colnames(merchandise_trade)[-1]
+
+merchandise_trade_filtered <- merchandise_trade %>%
+  select(c("Commodity Sections", time_columns[year(ym(time_columns)) %in% 2015:2024]))
+
+merchandise_import <- merchandise_trade_filtered[7:16, ] %>%
+  mutate(Type = "Import")
+merchandise_export <- merchandise_trade_filtered[20:29, ] %>%
+  mutate(Type = "Export")
+
+merchandise_trade_combined <- bind_rows(merchandise_import, merchandise_export)
+
+merchandise_trade_combined
+```
+
+```{r}
+merchandise_trade_type <- merchandise_trade_combined %>%
+  pivot_longer(cols = -c('Commodity Sections', Type), names_to = "Date", values_to = "Value")
+
+merchandise_trade_type
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+
+merchandise_trade_type <- merchandise_trade_combined %>%
+  pivot_longer(cols = -c('Commodity Sections', Type), names_to = "Date", values_to = "Value") %>%
+  mutate(Year = year(ym(Date)))  # Extract year from 'Date'
+
+merchandise_trade_by_year <- merchandise_trade_type %>%
+  group_by(`Commodity Sections`, Type, Year) %>%
+  summarise(Value = sum(Value, na.rm = TRUE), .groups = 'drop')
+
+merchandise_trade_by_year
+```
+
+```{r}
+library(tidyverse)
+library(lubridate)
+
+merchandise_trade_type <- merchandise_trade_combined %>%
+  pivot_longer(cols = -c('Commodity Sections', Type), names_to = "Date", values_to = "Value") %>%
+  mutate(Year = year(ym(Date)))  # Extract year from 'Date'
+
+merchandise_trade_by_year <- merchandise_trade_type %>%
+  group_by(`Commodity Sections`, Year, Type) %>%
+  summarise(Value = sum(Value, na.rm = TRUE), .groups = 'drop')
+
+exports_data <- merchandise_trade_by_year %>%
+  filter(Type == "Export") %>%
+  select(`Commodity Sections`, Year, Export_Value = Value)
+
+imports_data <- merchandise_trade_by_year %>%
+  filter(Type == "Import") %>%
+  select(`Commodity Sections`, Year, Import_Value = Value)
+
+combined_commodity_data <- left_join(exports_data, imports_data, by = c("Commodity Sections", "Year"))
+
+combined_commodity_data <- combined_commodity_data %>%
+  mutate(Total = Import_Value + Export_Value)
+
+combined_commodity_data
+```
+
+# 4.0 Evaluate and create make-over of data visualisation
+
+## 4.1 Data Visualisation 1: Total Merchandise Trade at Current Price, 2020 - 2024
+
+::: callout-important
+## Critic
+
+The current visualization of total merchandise trade effectively displays both imports and exports for each year using a single stacked bar chart. The imports values are shown on top, exports values on the bottom, and the total trade value is represented as a line in between, with percentage growth or decline annotated on the chart. While this layout allows for a clear comparison between imports and exports, it still lacks the ability to highlight long-term trends. Although the chart provides a snapshot of annual trade values, it does not give enough emphasis to the overall progression or changes in trade over time. The line indicating total trade growth is a good step toward this, but additional time-series elements, like smoothing or trendlines, could enhance the understanding of fluctuations in trade values. Furthermore, integrating the total trade values more prominently within the bar structure could offer a more cohesive and visually compelling narrative, making it easier to track the evolution of Singapore's trade over the years. This approach would help in revealing patterns and trends, contributing to a more comprehensive view of how imports and exports are evolving alongside total trade.
+:::
+
+```{r}
+total_trade_filtered <- Total_Trade %>%
+  filter(Countries == "Total All Markets" & Year >= 2019 & Year <= 2024)
+
+total_trade_filtered$Year <- as.factor(total_trade_filtered$Year)
+
+dodge_pos <- position_dodge(width = 0.6)
+```
+
+```{r}
+total_trade_filtered <- total_trade_filtered %>%
+  arrange(Year) %>%
+  mutate(Total_Trade_Growth = (Total_Trade / lag(Total_Trade) - 1) * 100)
+
+
+midpoint <- 0  
+
+p <- ggplot(total_trade_filtered) +  
+  geom_bar(aes(x = Year, y = Value_Imports, fill = "Imports"), 
+           stat = "identity", position = "identity", width = 0.5) +
+  geom_bar(aes(x = Year, y = -Value_TotalExports, fill = "Exports"),
+           stat = "identity", position = "identity", width = 0.5) +
+  geom_line(aes(x = Year, y = Total_Trade, group = 1, color = "Total Trade"), 
+            size = 1) +
+  geom_point(aes(x = Year, y = Total_Trade, color = "Total Trade"), 
+             size = 3) +
+  geom_text(aes(x = Year, y = midpoint, label = scales::comma(Total_Trade)), 
+            size = 3, fontface = "bold", color = "black") +
+  geom_text(aes(x = Year, y = Total_Trade * 1.05, 
+                label = ifelse(!is.na(Total_Trade_Growth), paste0(round(Total_Trade_Growth, 1), "%"), "")), 
+            size = 3, fontface = "bold", color = "#636363") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+  scale_y_continuous(breaks = seq(-1500000, 1500000, by = 250000),
+                     limits = c(-1500000, 1500000),
+                     labels = function(x) scales::comma(abs(x))) +
+  labs(title = "Total Merchandise Trade (Imports & Exports) - All Markets", 
+       y = "Trade Value", x = "Year") +
+  scale_fill_manual(values = c("Imports" = "#6BAED6", "Exports" = "#FC9272")) +
+  scale_color_manual(values = c("Total Trade" = "#636363")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+ggplotly(p, tooltip = c("x", "y")) %>%
+  layout(height = 400, width = 600)
+```
+
+## 4.2 Data Visualisation 2: Merchandise Trade Performance with Major Trading Partners (2024)
+
+::: callout-important
+## Critic
+
+The current visualization of merchandise trade performance with major trading partners provides useful insights into the balance between imports and exports. The scatter plot, with exports on the x-axis and imports on the y-axis, effectively places countries with higher exports on the lower right side and those with higher imports on the upper left. The use of bubble sizes to represent total trade value is also intuitive, giving a sense of the economic scale of each country’s trade with Singapore. However, the size of the bubbles may present some challenges. When bubbles are close together, it becomes difficult to interpret the values accurately, especially when there is overlap. The scatter plot itself doesn’t allow for an easy view of the specific trade balance (exports vs. imports) for each country, requiring users to rely on the tooltips for precise information. Additionally, while the diagonal line helps to differentiate countries with more exports or imports, it does not provide much further detail on the magnitude of the imbalance. To improve clarity, it could be beneficial to add a visual indicator or color gradient showing the trade balance (i.e., a red-green scale), making it easier to spot trends in trade surpluses or deficits. Lastly, the chart's effectiveness could be enhanced by simplifying the plot elements, such as by labeling the countries directly on the plot, making it easier to associate the bubbles with their respective countries without relying solely on tooltips.
+:::
+
+```{r}
+print(Total_Trade %>% filter(Year == 2024) %>% head())
+
+top_trade_partners <- Total_Trade %>%
+  filter(Year == 2024) %>% 
+  filter(!grepl("^Total All Markets$|^America$|^Europe$|^Asia$|^Africa$|^Oceania$|^Other Markets", trimws(Countries))) %>% 
+  arrange(desc(Total_Trade)) %>%
+  head(10)
+
+top_trade_partners$Value_TotalExports <- as.numeric(top_trade_partners$Value_TotalExports)
+top_trade_partners$Value_Imports <- as.numeric(top_trade_partners$Value_Imports)
+
+max_exports <- max(top_trade_partners$Value_TotalExports, na.rm = TRUE)
+max_imports <- max(top_trade_partners$Value_Imports, na.rm = TRUE)
+
+print(paste("Max Exports:", max_exports))
+print(paste("Max Imports:", max_imports))
+
+country_colors <- c("China" = "blue", "Malaysia" = "red", "United States" = "green", 
+                    "Taiwan" = "purple", "Hong Kong" = "orange", "Indonesia" = "pink", 
+                    "Korea" = "cyan", "Japan" = "yellow", "Thailand" = "brown", "India" = "gray")
+
+p <- ggplot(top_trade_partners, aes(x = Value_TotalExports, 
+                                    y = Value_Imports, 
+                                    size = Total_Trade, 
+                                    color = Countries, 
+                                    text = paste0("Country: ", Countries, 
+                                                  "<br>Exports: ", scales::comma(Value_TotalExports),
+                                                  "<br>Imports: ", scales::comma(Value_Imports),
+                                                  "<br>Total Trade: ", scales::comma(Total_Trade)))) +
+  geom_point(alpha = 0.7) + 
+  scale_size_continuous(range = c(5, 15), labels = scales::comma) + 
+  scale_x_continuous(labels = scales::comma, 
+                     limits = c(0, max_exports * 1.1)) +
+  scale_y_continuous(labels = scales::comma, 
+                     limits = c(0, max_imports * 1.1)) +
+  geom_abline(slope = 1, intercept = 0, linetype = "dashed", color = "black") + 
+  scale_color_manual(values = country_colors) +
+  geom_text(aes(label = gsub("United States", "US", Countries)),
+            check_overlap = TRUE, 
+            size = 3, 
+            color = "black",
+            fontface = "bold", 
+            stroke = 0.5,
+            nudge_y = 3000) +
+  theme_minimal() +
+  labs(title = "Top 10 Merchandise Trade Partners (2024)",
+       x = "Exports (SGD)", 
+       y = "Imports (SGD)", 
+       size = "Total Trade Value", 
+       color = "Country") +  # Color by Country
+  theme(legend.position = "right",
+        panel.grid.major = element_line(size = 0.5, color = "gray"), 
+        panel.grid.minor = element_line(size = 0.25, color = "lightgray"))
+
+ggplotly(p, tooltip = "text") %>%
+  layout(
+    height = 400, 
+    width = 600, 
+    dragmode = "zoom",
+    updatemenus = list(
+      list(
+        buttons = list(
+          list(method = "relayout", args = list("xaxis.range", c(0, max_exports * 1.1))),
+          list(method = "relayout", args = list("yaxis.range", c(0, max_imports * 1.1)))
+        )
+      )
+    )
+  )
+
+```
+
+## 4.3 Data Visualisation 3: Non-Oil Merchandise Trade by Major Commodity Sections (2024)
+
+::: callout-important
+## Critic
+
+The bar chart effectively compares exports and imports across major commodity sections, making it clear which sections contribute more to trade. However, a simple grouped bar chart might not always provide the best comparison across multiple sections, particularly when there are numerous categories or a large variance in trade values. In this case, the top five commodity sections are selected, which helps to focus the analysis, but the chart might still be challenging to interpret in terms of proportional trade imbalances. The visual clutter that could arise from multiple sections with significantly different values could overwhelm the viewer, especially if there were more than five sections being compared.
+:::
+
+```{r}
+combined_commodity_data_filtered <- combined_commodity_data %>%
+  filter(Year == 2024) %>%
+  filter(`Commodity Sections` != "Total Merchandise Exports, (At Current Prices)")
+
+combined_commodity_data_filtered <- combined_commodity_data_filtered %>%
+  mutate(Total_Trade = Export_Value + Import_Value)
+
+top_5_commodities <- combined_commodity_data_filtered %>%
+  group_by(`Commodity Sections`) %>%
+  summarise(Total_Section_Value = sum(Total_Trade), .groups = "drop") %>%
+  slice_max(Total_Section_Value, n = 5) %>%
+  pull(`Commodity Sections`)
+
+data_top_5 <- combined_commodity_data_filtered %>%
+  filter(`Commodity Sections` %in% top_5_commodities)
+
+data_top_5_long <- data_top_5 %>%
+  pivot_longer(cols = c(Export_Value, Import_Value), 
+               names_to = "Type", 
+               values_to = "Value") %>%
+  mutate(Type = recode(Type, 
+                       "Export_Value" = "Exports", 
+                       "Import_Value" = "Imports"))
+
+p <- ggplot(data_top_5_long, aes(x = reorder(`Commodity Sections`, -Value), 
+                                 y = Value, fill = Type, 
+                                 text = paste("Trade Value: SGD", scales::comma(Value)))) +
+  geom_bar(stat = "identity", position = "dodge", width = 0.7) +
+  scale_fill_manual(values = c("Exports" = "#6BAED6", "Imports" = "#FC9272")) +
+  theme_minimal() +
+  labs(title = "Top 5 Non-Oil Merchandise Trade by Major Commodity Sections (2024)",
+       x = "Commodity Section", 
+       y = "Trade Value (SGD)",
+       fill = "Trade Type") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), 
+        legend.position = "bottom") +
+  scale_y_continuous(labels = scales::comma)
+
+interactive_plot <- ggplotly(p, tooltip = "text")
+
+interactive_plot
+```
+
+# 5.0 Time Series Analysis
+
+## 5.1 Total Market Trade Over the Years
+
+```{r}
+Total_Trade_Growth <- Total_Trade %>%
+  filter(Countries == "Total All Markets", Year != "2025") %>%
+  arrange(Year) %>%
+  mutate(Percentage_Growth = (Total_Trade - lag(Total_Trade)) / lag(Total_Trade) * 100)
+
+tsa <- ggplot(Total_Trade_Growth, aes(x = Year, y = Total_Trade)) +
+  geom_line(size = 0.5, color = "blue") +
+  geom_point(color = "red") +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Total Market Trade Over the Years", 
+       x = "Year", 
+       y = "Total Trade (SGD)") +
+  geom_text(aes(y = Total_Trade * 1.05,
+                label = ifelse(!is.na(Percentage_Growth), 
+                               paste0(round(Percentage_Growth, 1), "%"), "")), 
+            vjust = -0.5, color = "black", size = 3)
+
+ggplotly(tsa)
+```
+
+## 5.2 Top 10 Countries by Total Market Trade Over the Years
+
+```{r}
+excluded_regions <- c("Total All Markets", "America", "Asia", "Africa", "Oceania", "Europe", "Other Markets America", "Other Markets Asia", "Other Markets Africa", "Other Markets Oceania", "Other Markets Europe")
+
+Total_Trade <- Total_Trade %>%
+  filter(!Countries %in% excluded_regions, Year !=2025)
+
+top_10_countries <- Total_Trade %>%
+  group_by(Countries) %>%
+  summarise(Total_Trade_Sum = sum(Total_Trade, na.rm = TRUE)) %>%
+  top_n(10, Total_Trade_Sum) %>%
+  pull(Countries)
+
+Total_Trade_Top10 <- Total_Trade %>%
+  filter(Countries %in% top_10_countries)
+
+mts <- ggplot(Total_Trade_Top10, aes(x = Year, y = Total_Trade, color = Countries)) +
+  geom_line(size = 0.8) +
+  scale_y_continuous(labels = scales::comma) +
+  theme_minimal() +
+  labs(title = "Top 10 Countries by Total Market Trade Over the Years",
+       x = "Year", y = "Total Trade (SGD)", color = "Country") +
+  theme(legend.position = "bottom", 
+        legend.box.spacing = unit(0.5, "cm"))
+
+ggplotly(mts)
+```
+
+## 5.3 Top 10 Countries by total Merchandise Exports (2015-2024)
+
+```{r, fig.height=5}
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+
+Total_exports_ts <- total_exports %>%
+  pivot_longer(cols = -Countries,
+               names_to = "Year",
+               values_to = "Value") %>%
+  arrange(Countries, Year)
+
+Total_exports_ts <- Total_exports_ts %>%
+  filter(!Countries %in% excluded_regions, Year >= 2015 & Year <= 2024)
+
+top_10_exports <- Total_exports_ts %>%
+  group_by(Countries) %>%
+  summarise(Total_Exports_Sum = sum(Value, na.rm = TRUE)) %>%
+  top_n(10, Total_Exports_Sum) %>%
+  pull(Countries)
+
+Total_Exports_Top10 <- Total_exports_ts %>%
+  filter(Countries %in% top_10_exports)
+
+ggplot(data = Total_Exports_Top10,
+       aes(x = Year, y = Value, group = Countries, color = Countries)) +
+  geom_line(size = 0.5) +
+  facet_wrap(~ Countries, ncol = 3, scales = "free_y") +
+  theme_bw() +
+  labs(title = "Top 10 Countries by Total Merchandise Exports (2015-2024)",
+       x = "Year", y = "Export Value")
+
+```
+
+## 5.4 Top 10 Countries by total Merchandise Imports (2015-2024)
+
+```{r, fig.height=5}
+Imports_ts <- imports_clean %>%
+  pivot_longer(cols = -Countries,
+               names_to = "Year",
+               values_to = "Value") %>%
+  arrange(Countries, Year)
+
+Imports_ts <- Imports_ts %>%
+  filter(!Countries %in% excluded_regions, Year >= 2015 & Year <= 2024)
+
+top_10_imports <- Imports_ts %>%
+  group_by(Countries) %>%
+  summarise(Total_Imports_Sum = sum(Value, na.rm = TRUE)) %>%
+  top_n(10, Total_Imports_Sum) %>%
+  pull(Countries)
+
+Imports_Top10 <- Imports_ts %>%
+  filter(Countries %in% top_10_imports)
+
+ggplot(data = Imports_Top10,
+       aes(x = Year, y = Value, group = Countries, color = Countries)) +
+  geom_line(size = 0.5) +
+  facet_wrap(~ Countries, ncol = 3, scales = "free_y") +
+  theme_bw() +
+  labs(title = "Top 10 Countries by Total Merchandise Imports (2015-2024)",
+       x = "Year", y = "Import Value")
+```
+
+## 5.5 Top 10 Countries by Total Merchandise Trade (2003 - 2025)
+
+```{r, fig.width = 10}
+ggplot(data = Total_Trade_Top10,
+       aes(x = Year, y = Total_Trade, group = Countries, color = Countries))+
+  geom_line(size = 0.5) +
+  facet_wrap(~ Countries,
+             ncol = 3,
+             scales = "free_y") +
+  labs(title = "Top 10 Countries by Total Merchandise Trade (2003 Jan - 2025 Jan) ")
+  theme_bw()
+```

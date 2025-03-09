@@ -2,8 +2,4 @@
 title: "About"
 ---
 
-About this site
-
-```{r}
-1 + 1
-```
+This site is prepared by **Enrico Limberg** who takes the course of ISSS608 Visual Analytics & Applications. This site comprises of **Hands-on Exercise, Take home Exercise, and In-class Exercise.**
