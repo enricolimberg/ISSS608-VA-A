@@ -81,41 +81,14 @@ The R packages that are going to be used for this exercises are:
 #### **Time-Series Analysis & Forecasting**
 
 -   **readxl**: For importing Excel files into R.
-
-<!-- -->
-
 -   **lubridate**: Simplifies date and time parsing and manipulation.
-
-<!-- -->
-
 -   **tsibble**: A data structure for tidy time-series data.
-
-<!-- -->
-
 -   **feasts**: Tools for feature extraction and statistical analysis of time-series data.
-
-<!-- -->
-
 -   **fable**: Framework for time-series forecasting, supporting models like ARIMA and ETS.
-
-<!-- -->
-
 -   **fable.prophet**: Integrates Facebook's prophet for time-series forecasting.
-
-<!-- -->
-
 -   **timetk**: Extends time-series visualization, feature engineering, and analysis.
-
-<!-- -->
-
 -   **modeltime**: A modern framework for machine learning-based time-series forecasting.
-
-<!-- -->
-
 -   **seasonal**: For performing seasonal adjustments in time-series data.
-
-<!-- -->
-
 -   **tidymodels**: A framework for modeling and machine learning, providing a consistent interface for model building and evaluation.
 
 These tools will enable us to perform **visual analytics**, redesign **existing trade visualizations**, and implement **time-series analysis** effectively.
@@ -651,5 +624,4 @@ ggplot(data = Total_Trade_Top10,
              ncol = 3,
              scales = "free_y") +
   labs(title = "Top 10 Countries by Total Merchandise Trade (2003 Jan - 2025 Jan) ")
-  theme_bw()
 ```
