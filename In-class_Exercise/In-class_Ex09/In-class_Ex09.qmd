@@ -1,0 +1,60 @@
+---
+title: "In-class_Ex09"
+author: "Enrico Limberg"
+---
+
+## **1.0 Load R Packages**
+
+```{r}
+pacman::p_load(igraph, tidygraph, ggraph, 
+               visNetwork, lubridate, clock,
+               tidyverse, graphlayouts)
+```
+
+## **2.0 Import the Data**
+
+```{r}
+GAStech_nodes <- read_csv("data/GAStech_email_node.csv")
+```
+
+```{r}
+GAStech_edges <- read_csv("data/GAStech_email_edge-v2.csv")
+```
+
+# 3.0 Data Wrangling
+
+```{r}
+GAStech_edges <- GAStech_edges %>%
+  mutate(SendDate = dmy(SentDate)) %>%
+  mutate(Weekday = wday(SentDate,
+                        label = TRUE,
+                        abbr = FALSE))
+```
+
+The code chunk below is to aggregate the data based on the source, target and the weekday to simplify the df. The code [***filter(source!=target)***]{.underline} is to avoid same source and target value.
+
+```{r}
+GAStech_edges_aggregated <- GAStech_edges %>%
+  filter(MainSubject == "Work related") %>%
+  group_by(source, target, Weekday) %>%
+    summarise(Weight = n()) %>%
+  filter(source!=target) %>%
+  filter(Weight > 1) %>%
+  ungroup()
+```
+
+The code below will show how many times each node [**are linked**]{.underline} to each other.
+
+```{r}
+GAStech_graph <- tbl_graph(nodes = GAStech_nodes,
+                           edges = GAStech_edges_aggregated, 
+                           directed = TRUE)
+```
+
+Compute the network metrics [**betweenness, closeness, centrality measure, etc**]{.underline} to interpret the meaning of the network graph.
+
+```{r}
+ggraph(GAStech_graph) +
+  geom_edge_link() +
+  geom_node_point()
+```

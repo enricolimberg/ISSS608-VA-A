@@ -1230,5 +1230,26 @@
     "title": "Take-home Exercise 1: Heart Attack in Japan (Youth vs Adult)",
     "section": "4.7 MAP Distribution in Youth vs. Adult and Heart Attack Occurrence",
     "text": "4.7 MAP Distribution in Youth vs. Adult and Heart Attack Occurrence\n\n4.7.1 Calculating Mean Arterial Pressure (MAP)\nMean Arterial Pressure (MAP) is an important measure in cardiovascular health that represents the average blood pressure in a person’s arteries during one cardiac cycle. It is particularly useful for assessing perfusion to vital organs.\nThe formula used is as follow:\nMAP = Diastolic Blood Pressure + 1/3 (Systolic Blood Pressure - Diastolic Blood Pressure)\n\nheart_attack_yes &lt;- heart_attack_yes %&gt;% \n  mutate(MAP = (Systolic_BP + 2 * Diastolic_BP) / 3)\n\n\n\n4.7.2 Comparison of Systolic and Diastolic Levels in Youth Vs. Adult\n\np7 &lt;- ggplot(heart_attack_yes, aes(x = Systolic_BP, y = Diastolic_BP, color = Age_Group)) +\n  geom_point(alpha = 0.5) +\n  labs(title = \"Systolic vs. Diastolic Blood Pressure by Age Group\",\n       x = \"Systolic Blood Pressure\", y = \"Diastolic Blood Pressure\") +\n  theme_minimal()\nggplotly(p7)\n\n\n\n\n\n\n\n4.7.3 Mean Arterial Pressure (MAP) between Youth and Adult with heart attack cases\n\nheart_attack_yes %&gt;%\n  group_by(Age_Group) %&gt;%\n  summarise(\n    Median_MAP = median(MAP, na.rm = TRUE),\n    Mean_MAP = mean(MAP, na.rm = TRUE)\n  )\n\n# A tibble: 2 × 3\n  Age_Group Median_MAP Mean_MAP\n  &lt;chr&gt;          &lt;dbl&gt;    &lt;dbl&gt;\n1 Adult           93.4     93.4\n2 Youth           93.5     93.2\n\n\n\np8 &lt;- ggplot(heart_attack_yes, aes(x = MAP, fill = Age_Group)) +\n  geom_density(alpha = 0.5) +\n  geom_vline(data = heart_attack_yes %&gt;%\n               group_by(Age_Group) %&gt;%\n               summarise(Median_MAP = median(MAP, na.rm = TRUE)),\n             aes(xintercept = Median_MAP, color = Age_Group),\n             linetype = \"dashed\", size = 1) +\n  ggtitle(\"MAP Distribution by Age Group in Heart Attack Cases\") +\n  xlab(\"Mean Arterial Pressure (MAP)\") +\n  ylab(\"Density\") +\n  scale_fill_manual(values = c(\"Youth\" = \"blue\", \"Adult\" = \"red\")) +\n  scale_color_manual(values = c(\"Youth\" = \"blue\", \"Adult\" = \"red\")) +\n  theme_minimal() +\n  theme(legend.position = \"top\")\nggplotly(p8)\n\n\n\n\n\n\n\n\n\n\n\nKey Insights:\n\n\n\n\nThe highest occurrence of heart attacks for both youth and adults falls within the MAP range of approximately 80-100 mmHg.\nThis suggests that age is not a significant factor in MAP distribution among heart attack cases, as both age groups show a similar pattern.\nHeart attacks are not solely associated with extremely high or low MAP values, indicating other factors may contribute more significantly to heart attack risk."
+  },
+  {
+    "objectID": "In-class_Exercise/In-class_Ex09/In-class_Ex09.html",
+    "href": "In-class_Exercise/In-class_Ex09/In-class_Ex09.html",
+    "title": "In-class_Ex09",
+    "section": "",
+    "text": "pacman::p_load(igraph, tidygraph, ggraph, \n               visNetwork, lubridate, clock,\n               tidyverse, graphlayouts)"
+  },
+  {
+    "objectID": "In-class_Exercise/In-class_Ex09/In-class_Ex09.html#load-r-packages",
+    "href": "In-class_Exercise/In-class_Ex09/In-class_Ex09.html#load-r-packages",
+    "title": "In-class_Ex09",
+    "section": "",
+    "text": "pacman::p_load(igraph, tidygraph, ggraph, \n               visNetwork, lubridate, clock,\n               tidyverse, graphlayouts)"
+  },
+  {
+    "objectID": "In-class_Exercise/In-class_Ex09/In-class_Ex09.html#import-the-data",
+    "href": "In-class_Exercise/In-class_Ex09/In-class_Ex09.html#import-the-data",
+    "title": "In-class_Ex09",
+    "section": "2.0 Import the Data",
+    "text": "2.0 Import the Data\n\nGAStech_nodes &lt;- read_csv(\"data/GAStech_email_node.csv\")\n\nRows: 54 Columns: 4\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr (3): label, Department, Title\ndbl (1): id\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.\n\n\n\nGAStech_edges &lt;- read_csv(\"data/GAStech_email_edge-v2.csv\")\n\nRows: 9063 Columns: 8\n── Column specification ────────────────────────────────────────────────────────\nDelimiter: \",\"\nchr  (5): SentDate, Subject, MainSubject, sourceLabel, targetLabel\ndbl  (2): source, target\ntime (1): SentTime\n\nℹ Use `spec()` to retrieve the full column specification for this data.\nℹ Specify the column types or set `show_col_types = FALSE` to quiet this message."
   }
 ]
