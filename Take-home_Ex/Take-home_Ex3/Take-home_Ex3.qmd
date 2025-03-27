@@ -10,65 +10,91 @@ execute:
     freeze: true
 ---
 
+# Prototyping Modules for Visual Analytics Shiny Application
+
+# 1.0 Install and Load R packages
+
 ```{r}
-library(tidyverse)
-library(lubridate)
-library(fable)
-library(tsibble)
-library(ggplot2)
+pacman::p_load(tidyverse,tsibble,feasts,fable,seasonal,tidymodels,timetk,modeltime)
+```
 
-# Load and preprocess data
-weather_data <- read.csv("data/weather.csv") %>%
-  mutate(date = as.Date(paste(year, month, day, sep = "-"))) %>%
-  mutate(across(where(is.numeric), ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+# 2.0 Import Data
 
-# Convert to tsibble (time-series format)
-weather_ts <- weather_data %>%
+```{r}
+weather <- read_csv("data/weather.csv")
+```
+
+```{r}
+glimpse(weather)
+```
+
+3.0 Data Wrangling
+
+3.1 Convert year, month, and day into single date column
+
+```{r}
+weather <- weather %>%
+  mutate(date = make_date(year, month, day)) %>%
+  arrange(date)
+```
+
+3.2 Remove missing values
+
+```{r}
+weather <- weather %>% 
+  drop_na()
+```
+
+3.3 Convert to time-series format
+
+```{r}
+ts_data <- weather %>%
   as_tsibble(index = date, key = station)
-
-
 ```
 
 ```{r}
-# Print first few rows
-head(weather_data)
+ts_data
+```
+
+4.0 Time-Series Visualization
+
+```{r}
+ts
 ```
 
 ```{r}
-# Define a station to analyze
-selected_station <- "Changi"
-
-# Define a variable to forecast
-selected_var <- "mean_temperature_c"
-
-# Filter last 3 months
-filtered_data <- weather_ts %>%
-  filter(station == selected_station & date >= max(date) - months(3))
-
-# Plot the past 3 months of data
-ggplot(filtered_data, aes(x = date, y = .data[[selected_var]])) +
-  geom_line(color = "blue") +
-  labs(title = paste("Last 3 Months of", selected_var, "at", selected_station),
-       x = "Date", y = selected_var) +
-  theme_minimal()
+ts_data %>% autoplot(mean_temperature_c) + 
+  labs(title = "Mean Temperature Over Time", y = "Temperature (°C)")
 ```
 
+5.0 STL Decomposition
+
 ```{r}
-# Ensure there are enough data points
-nrow(filtered_data)
-# Check for NA values
-sum(is.na(filtered_data[[selected_var]]))
-filtered_data <- filtered_data %>%
-  mutate(across(where(is.numeric), ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
+ts_data %>% model(STL(mean_temperature_c ~ season(window = "periodic"))) %>%
+  components() %>%
+  autoplot()
 ```
 
-```{r}
-str(filtered_data)
+6.0 Classical Decomposition
 
+```{r}
+ts_data %>% model(classical_decomposition(mean_temperature_c, type = "additive")) %>%
+  components() %>% 
+  autoplot()
 ```
 
-```{r}
-filtered_data <- filtered_data %>%
-  mutate(!!selected_var := as.numeric(.data[[selected_var]]))
+7.0 Holt-Winters Seasonal Forecasting
 
+```{r}
+ts_data %>% model(ETS(mean_temperature_c ~ error("A") + trend("A") + season("A"))) %>%
+  forecast(h = "30 days") %>% 
+  autoplot(ts_data)
+```
+
+8.0 ARIMA Forecasting
+
+```{r}
+ts_data %>% model(ARIMA(mean_temperature_c)) %>%
+  forecast(h = "30 days") %>% 
+  autoplot(ts_data)
 ```
