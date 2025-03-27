@@ -1,0 +1,14 @@
+name: Take-home_Ex3
+title:
+username: enricolimberg
+account: enricolimberg
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14313585
+bundleId: 9989079
+url: https://enricolimberg.shinyapps.io/Take-home_Ex3/
+version: 1
+quarto_version: 1.5.57
+quarto_engines: markdown, knitr
+asMultiple: FALSE
+asStatic: FALSE
