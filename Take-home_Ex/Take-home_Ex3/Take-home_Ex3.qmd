@@ -69,19 +69,7 @@ ts_data %>% autoplot(mean_temperature_c) +
 
 5.0 STL Decomposition
 
-```{r}
-ts_data %>% model(STL(mean_temperature_c ~ season(window = "periodic"))) %>%
-  components() %>%
-  autoplot()
-```
-
 6.0 Classical Decomposition
-
-```{r}
-ts_data %>% model(classical_decomposition(mean_temperature_c, type = "additive")) %>%
-  components() %>% 
-  autoplot()
-```
 
 7.0 Holt-Winters Seasonal Forecasting
 
