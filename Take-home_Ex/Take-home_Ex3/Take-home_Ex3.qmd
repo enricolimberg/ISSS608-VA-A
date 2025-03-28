@@ -15,7 +15,7 @@ execute:
 # 1.0 Install and Load R packages
 
 ```{r}
-pacman::p_load(tidyverse,tsibble,feasts,fable,seasonal,tidymodels,timetk,modeltime)
+pacman::p_load(tidyverse,tsibble,feasts,fable,seasonal,tidymodels,timetk,modeltime,forecast,ggplot2)
 ```
 
 # 2.0 Import Data
@@ -28,9 +28,9 @@ weather <- read_csv("data/weather.csv")
 glimpse(weather)
 ```
 
-3.0 Data Wrangling
+# 3.0 Data Wrangling
 
-3.1 Convert year, month, and day into single date column
+## 3.1 Convert year, month, and day into single date column
 
 ```{r}
 weather <- weather %>%
@@ -38,51 +38,376 @@ weather <- weather %>%
   arrange(date)
 ```
 
-3.2 Remove missing values
+## 3.2 Remove missing values
 
 ```{r}
 weather <- weather %>% 
   drop_na()
 ```
 
-3.3 Convert to time-series format
+## 3.3 Convert to time-series format
 
 ```{r}
 ts_data <- weather %>%
-  as_tsibble(index = date, key = station)
+  as_tsibble(index = date, key = station) %>%
+  fill_gaps()
 ```
 
 ```{r}
 ts_data
 ```
 
-4.0 Time-Series Visualization
+# 4.0 Time-Series Visualization
+
+## 4.1 Single time-series
 
 ```{r}
-ts
+ts_data %>%
+  filter(station == "Paya Lebar") %>%
+  ggplot(aes(x = date,
+             y = mean_temperature_c))+
+  geom_line(size = 0.5)
 ```
 
-```{r}
-ts_data %>% autoplot(mean_temperature_c) + 
+## 4.2 Multiple time-series
+
+```{r, fig.height=6}
+ggplot(data = ts_data,
+       aes(x = date,
+           y = mean_temperature_c,
+           color = station))+
+  geom_line(size = 0.5) +
+  theme(legend.position = "bottom",
+        legend.box.spacing = unit(0.5, "cm"))+
   labs(title = "Mean Temperature Over Time", y = "Temperature (°C)")
 ```
 
-5.0 STL Decomposition
+## 4.3 facet_wrap() for effective comparison of multiple line graph
 
-6.0 Classical Decomposition
-
-7.0 Holt-Winters Seasonal Forecasting
-
-```{r}
-ts_data %>% model(ETS(mean_temperature_c ~ error("A") + trend("A") + season("A"))) %>%
-  forecast(h = "30 days") %>% 
-  autoplot(ts_data)
+```{r,fig.height=10}
+ggplot(data = ts_data, 
+       aes(x = date, 
+           y = mean_temperature_c))+
+  geom_line(size = 0.5) +
+  facet_wrap(~ station,
+             ncol = 3,
+             scales = "free_y") +
+  theme_bw()
 ```
 
-8.0 ARIMA Forecasting
+# 5.0 Visual Analysis of Time-series data
+
+## 5.1 Seasonality with seasonal plot
 
 ```{r}
+ts_data %>%
+  filter(station == "Admiralty" |
+         station == "Paya Lebar" |
+         station == "Clementi" |
+         station == "Changi") %>% 
+  fill_gaps() %>%
+  gg_season(mean_temperature_c)+
+  labs(title = "Seasonal Plot", y = "Temperature (°C)")
+```
+
+## 5.2 Cycle Plot
+
+```{r}
+ts_data %>%
+  filter(station == "Admiralty" |
+         station == "Changi") %>% 
+  autoplot(mean_temperature_c) + 
+  facet_grid(station ~ ., scales = "free_y")
+```
+
+```         
+```
+
+# 6.0 Time series decomposition
+
+## 6.1 ACF plot of Daily Mean Temperature
+
+```{r}
+ts_data %>%
+  filter(station == "Changi") %>%
+  ACF(mean_temperature_c) %>%
+  autoplot()
+```
+
+## 6.2 PACF plot of Daily Mean Temperature
+
+```{r}
+ts_data %>%
+  filter(station == "Changi") %>%
+  PACF(mean_temperature_c) %>%
+  autoplot()
+```
+
+7.0 STL Decomposition
+
+```{r}
+
+ts_data <- ts_data %>%
+  fill_gaps() %>%
+  mutate(mean_temperature_c = na.interp(mean_temperature_c))
+```
+
+```{r}
+ts_data %>% count(is.na(mean_temperature_c))
+```
+
+```{r}
+ts_data %>%
+  filter(!is.na(mean_temperature_c)) %>%
+  model(STL(mean_temperature_c ~ season(window = "periodic"))) %>%
+  components() %>%
+  autoplot()
+```
+
+# **5.0 STL Decomposition**
+
+```{r, fig.width=10,fig.height=10}
+ts_data %>%
+  fill_gaps() %>%  # Convert implicit gaps to explicit missing values
+  mutate(mean_temperature_c = na.interp(mean_temperature_c)) %>%  # Interpolate missing values
+  filter(station == "Paya Lebar") %>%
+  model(STL(mean_temperature_c ~ season(window = "periodic"))) %>%
+  components() %>%
+  autoplot()
+```
+
+# **6.0 Classical Decomposition**
+
+```{r}
+ts_data %>%
+  fill_gaps() %>%  # Convert implicit gaps to explicit missing values
+  mutate(mean_temperature_c = na.interp(mean_temperature_c)) %>%
+  filter(station == "Changi") %>%
+  model(
+    classical_decomposition(
+      mean_temperature_c, type = "additive")) %>%
+  components() %>%
+  autoplot()
+```
+
+# 7.0 Visual Forecasting
+
+## 7.1 Data Sampling
+
+```{r}
+Changi_ts <- ts_data %>%
+  filter(station == "Changi") %>% 
+  mutate(Type = if_else(
+    date >= "2024-10-01", 
+    "Hold-out", "Training"))
+```
+
+```{r}
+Changi_train <- Changi_ts %>%
+  filter(date < "2024-10-01")
+```
+
+```{r}
+Changi_train %>% fill_gaps()
+```
+
+```{r,fig.height=6}
+Changi_train_imputed <- Changi_train %>%
+  mutate(mean_temperature_c = zoo::na.approx(mean_temperature_c))
+
+Changi_train_imputed %>%
+  model(stl = STL(mean_temperature_c)) %>%
+  components() %>%
+  autoplot()
+```
+
+## 7.2 Fitting Forecasting Model
+
+### 7.2.1 Fitting ETS Model
+
+```{r}
+ETS(y ~ error(c("A", "M")) 
+    + trend(c("N", "A", "Ad")) 
+    + season(c("N", "A", "M"))
+)
+```
+
+### 7.2.2 Fitting simple ETS
+
+```{r}
+ses <- Changi_train_imputed %>%
+  model(ETS(mean_temperature_c ~ error("A") 
+            + trend("N") 
+            + season("N")))
+ses
+```
+
+### 7.2.3 Check model assumptions
+
+```{r,fig.height=6}
+gg_tsresiduals(ses)
+```
+
+### 7.2.4 Model's report
+
+```{r}
+ses %>%
+  report()
+```
+
+### 7.2.5 Holt's Linear Method
+
+```{r}
+Changi_Holt <- Changi_train_imputed %>%
+  model(`Holt's method` = 
+          ETS(mean_temperature_c ~ error("A") +
+                trend("A") + 
+                season("N")))
+Changi_Holt %>% report()
+```
+
+```{r,fig.height=6}
+gg_tsresiduals(Changi_Holt)
+```
+
+### 7.2.6 Holt-Winters
+
+```{r}
+Changi_HW <- Changi_train_imputed %>%
+  model(
+    Additive = ETS(mean_temperature_c ~ error("A") 
+                   + trend("A") 
+                   + season("A")),
+    Multiplicative = ETS(mean_temperature_c ~ error("M") 
+                         + trend("A") 
+                         + season("M"))
+    )
+
+Changi_HW %>% report()
+```
+
+```{r}
+multi_ETS <- Changi_train_imputed %>%
+  model(`SES` = ETS(mean_temperature_c ~ error("A") + 
+                      trend("N") + 
+                      season("N")),
+        `Holt`= ETS(mean_temperature_c ~ error("A") +
+                      trend("A") +
+                      season("N")),
+        `damped Holt` = 
+          ETS(mean_temperature_c ~ error("A") +
+                trend("Ad") + 
+                season("N")),
+        `WH_A` = ETS(
+          mean_temperature_c ~ error("A") + 
+            trend("A") + 
+            season("A")),
+        `WH_M` = ETS(mean_temperature_c ~ error("M") 
+                         + trend("A") 
+                         + season("M"))
+  )
+```
+
+```{r}
+multi_ETS %>%
+  tidy()
+```
+
+```{r}
+multi_ETS %>% 
+  report()
+```
+
+```{r}
+multi_ETS %>%
+  forecast(h = "30 days") %>%
+  autoplot(Changi_train_imputed, 
+           level = NULL)
+```
+
+```{r}
+fit_autoETS <- Changi_train_imputed %>%
+  model(ETS(mean_temperature_c))
+fit_autoETS %>% report()
+```
+
+```{r, fig.height=6}
+gg_tsresiduals(fit_autoETS)
+```
+
+### 7.2.7 Forecasting future values
+
+```{r}
+fit_autoETS %>%
+  forecast(h = "30 days") %>%
+  autoplot(Changi_train_imputed)
+```
+
+### 7.2.8 **Visualising AutoETS model with ggplot2**
+
+```{r}
+fc_autoETS <- fit_autoETS %>%
+  forecast(h = "30 days")
+
+Changi_train_imputed %>%
+  ggplot(aes(x=`date`, 
+             y=mean_temperature_c)) +
+  autolayer(fc_autoETS, 
+            alpha = 0.6) +
+  geom_line(aes(
+    color = Type), 
+    alpha = 0.8) + 
+  geom_line(aes(
+    y = .mean, 
+    colour = "Forecast"), 
+    data = fc_autoETS) +
+  geom_line(aes(
+    y = .fitted, 
+    colour = "Fitted"), 
+    data = augment(fit_autoETS))
+```
+
+# 8.0 ARIMA Method
+
+## 8.1 Fitting ARIMA model
+
+```{r}
+fit_autoARIMA <- Changi_train_imputed %>%
+  model(ARIMA(mean_temperature_c))
+report(fit_autoARIMA)
+```
+
+```{r}
+Changi_training <- Changi_train_imputed %>% filter(Type == "Training")
+```
+
+```{r}
+Changi_multi <- Changi_training %>%
+  model(
+    ets = ETS(mean_temperature_c),
+    arima = ARIMA(mean_temperature_c)
+  )
+```
+
+```{r}
+Changi_multi %>%
+  glance()
+```
+
+```{r}
+Changi_forecast <- Changi_multi %>%
+  forecast(h = "30 days")
+```
+
+```{r}
+Changi_forecast %>%
+  autoplot(Changi_training)
+```
+
+## 8.2 Multi station ARIMA
+
+```{r, fig.height=20,fig.width=10}
 ts_data %>% model(ARIMA(mean_temperature_c)) %>%
-  forecast(h = "30 days") %>% 
+  forecast(h = "7 days") %>% 
   autoplot(ts_data)
 ```

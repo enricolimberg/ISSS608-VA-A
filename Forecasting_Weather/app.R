@@ -15,7 +15,7 @@ library(fable)
 library(tsibble)
 
 # Load and preprocess data
-weather_data <- read.csv("data/weather.csv") %>%
+weather_data <- read.csv("data/aspatial/weather.csv") %>%
   mutate(date = as.Date(paste(year, month, day, sep = "-"))) %>%
   mutate(across(where(is.numeric), ~ifelse(is.na(.), mean(., na.rm = TRUE), .)))
 

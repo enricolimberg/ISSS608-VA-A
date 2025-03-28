@@ -1314,5 +1314,103 @@
     "title": "Take-home_Ex2",
     "section": "5.5 Top 10 Countries by Total Merchandise Trade (2003 - 2025)",
     "text": "5.5 Top 10 Countries by Total Merchandise Trade (2003 - 2025)\n\nggplot(data = Total_Trade_Top10,\n       aes(x = Year, y = Total_Trade, group = Countries, color = Countries))+\n  geom_line(size = 0.5) +\n  facet_wrap(~ Countries,\n             ncol = 3,\n             scales = \"free_y\") +\n  labs(title = \"Top 10 Countries by Total Merchandise Trade (2003 Jan - 2025 Jan) \")"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#convert-year-month-and-day-into-single-date-column",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#convert-year-month-and-day-into-single-date-column",
+    "title": "Take-home_Ex3",
+    "section": "3.1 Convert year, month, and day into single date column",
+    "text": "3.1 Convert year, month, and day into single date column\n\nweather &lt;- weather %&gt;%\n  mutate(date = make_date(year, month, day)) %&gt;%\n  arrange(date)"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#remove-missing-values",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#remove-missing-values",
+    "title": "Take-home_Ex3",
+    "section": "3.2 Remove missing values",
+    "text": "3.2 Remove missing values\n\nweather &lt;- weather %&gt;% \n  drop_na()"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#convert-to-time-series-format",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#convert-to-time-series-format",
+    "title": "Take-home_Ex3",
+    "section": "3.3 Convert to time-series format",
+    "text": "3.3 Convert to time-series format\n\nts_data &lt;- weather %&gt;%\n  as_tsibble(index = date, key = station) %&gt;%\n  fill_gaps()\n\n\nts_data\n\n# A tsibble: 5,216 x 14 [1D]\n# Key:       station [16]\n   station    year month   day daily_rainfall_total_mm highest_30_min_rainfall…¹\n   &lt;chr&gt;     &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;                   &lt;dbl&gt;                     &lt;dbl&gt;\n 1 Admiralty  2024     1     1                     8.5                       2  \n 2 Admiralty  2024     1     2                     0.5                       0.5\n 3 Admiralty  2024     1     3                     1.5                       1.5\n 4 Admiralty  2024     1     4                    67.6                      10.6\n 5 Admiralty  2024     1     5                     5.4                       2.2\n 6 Admiralty  2024     1     6                     0.8                       0.8\n 7 Admiralty  2024     1     7                    69.6                      17.4\n 8 Admiralty  2024     1     8                     1.6                       1.2\n 9 Admiralty  2024     1     9                    49                        17.2\n10 Admiralty  2024     1    10                    63.2                      17.4\n# ℹ 5,206 more rows\n# ℹ abbreviated name: ¹​highest_30_min_rainfall_mm\n# ℹ 8 more variables: highest_60_min_rainfall_mm &lt;dbl&gt;,\n#   highest_120_min_rainfall_mm &lt;dbl&gt;, mean_temperature_c &lt;dbl&gt;,\n#   maximum_temperature_c &lt;dbl&gt;, minimum_temperature_c &lt;dbl&gt;,\n#   mean_wind_speed_km_h &lt;dbl&gt;, max_wind_speed_km_h &lt;dbl&gt;, date &lt;date&gt;"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#single-time-series",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#single-time-series",
+    "title": "Take-home_Ex3",
+    "section": "4.1 Single time-series",
+    "text": "4.1 Single time-series\n\nts_data %&gt;%\n  filter(station == \"Paya Lebar\") %&gt;%\n  ggplot(aes(x = date,\n             y = mean_temperature_c))+\n  geom_line(size = 0.5)"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#multiple-time-series",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#multiple-time-series",
+    "title": "Take-home_Ex3",
+    "section": "4.2 Multiple time-series",
+    "text": "4.2 Multiple time-series\n\nggplot(data = ts_data,\n       aes(x = date,\n           y = mean_temperature_c,\n           color = station))+\n  geom_line(size = 0.5) +\n  theme(legend.position = \"bottom\",\n        legend.box.spacing = unit(0.5, \"cm\"))+\n  labs(title = \"Mean Temperature Over Time\", y = \"Temperature (°C)\")"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#facet_wrap-for-effective-comparison-of-multiple-line-graph",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#facet_wrap-for-effective-comparison-of-multiple-line-graph",
+    "title": "Take-home_Ex3",
+    "section": "4.3 facet_wrap() for effective comparison of multiple line graph",
+    "text": "4.3 facet_wrap() for effective comparison of multiple line graph\n\nggplot(data = ts_data, \n       aes(x = date, \n           y = mean_temperature_c))+\n  geom_line(size = 0.5) +\n  facet_wrap(~ station,\n             ncol = 3,\n             scales = \"free_y\") +\n  theme_bw()"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#seasonality-with-seasonal-plot",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#seasonality-with-seasonal-plot",
+    "title": "Take-home_Ex3",
+    "section": "5.1 Seasonality with seasonal plot",
+    "text": "5.1 Seasonality with seasonal plot\n\nts_data %&gt;%\n  filter(station == \"Admiralty\" |\n         station == \"Paya Lebar\" |\n         station == \"Clementi\" |\n         station == \"Changi\") %&gt;% \n  fill_gaps() %&gt;%\n  gg_season(mean_temperature_c)+\n  labs(title = \"Seasonal Plot\", y = \"Temperature (°C)\")"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#cycle-plot",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#cycle-plot",
+    "title": "Take-home_Ex3",
+    "section": "5.2 Cycle Plot",
+    "text": "5.2 Cycle Plot\n\nts_data %&gt;%\n  filter(station == \"Admiralty\" |\n         station == \"Changi\") %&gt;% \n  autoplot(mean_temperature_c) + \n  facet_grid(station ~ ., scales = \"free_y\")"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#acf-plot-of-daily-mean-temperature",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#acf-plot-of-daily-mean-temperature",
+    "title": "Take-home_Ex3",
+    "section": "6.1 ACF plot of Daily Mean Temperature",
+    "text": "6.1 ACF plot of Daily Mean Temperature\n\nts_data %&gt;%\n  filter(station == \"Changi\") %&gt;%\n  ACF(mean_temperature_c) %&gt;%\n  autoplot()"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#pacf-plot-of-daily-mean-temperature",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#pacf-plot-of-daily-mean-temperature",
+    "title": "Take-home_Ex3",
+    "section": "6.2 PACF plot of Daily Mean Temperature",
+    "text": "6.2 PACF plot of Daily Mean Temperature\n\nts_data %&gt;%\n  filter(station == \"Changi\") %&gt;%\n  PACF(mean_temperature_c) %&gt;%\n  autoplot()\n\n\n\n\n\n\n\n\n7.0 STL Decomposition\n\nts_data &lt;- ts_data %&gt;%\n  fill_gaps() %&gt;%\n  mutate(mean_temperature_c = na.interp(mean_temperature_c))\n\n\nts_data %&gt;% count(is.na(mean_temperature_c))\n\n# A tibble: 1 × 2\n  `is.na(mean_temperature_c)`     n\n  &lt;lgl&gt;                       &lt;int&gt;\n1 FALSE                        5216\n\n\n\nts_data %&gt;%\n  filter(!is.na(mean_temperature_c)) %&gt;%\n  model(STL(mean_temperature_c ~ season(window = \"periodic\"))) %&gt;%\n  components() %&gt;%\n  autoplot()"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#data-sampling",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#data-sampling",
+    "title": "Take-home_Ex3",
+    "section": "7.1 Data Sampling",
+    "text": "7.1 Data Sampling\n\nChangi_ts &lt;- ts_data %&gt;%\n  filter(station == \"Changi\") %&gt;% \n  mutate(Type = if_else(\n    date &gt;= \"2024-10-01\", \n    \"Hold-out\", \"Training\"))\n\n\nChangi_train &lt;- Changi_ts %&gt;%\n  filter(date &lt; \"2024-10-01\")\n\n\nChangi_train %&gt;% fill_gaps()\n\n# A tsibble: 274 x 15 [1D]\n# Key:       station [1]\n   station  year month   day daily_rainfall_total_mm highest_30_min_rainfall_mm\n   &lt;chr&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;                   &lt;dbl&gt;                      &lt;dbl&gt;\n 1 Changi   2024     1     1                    49.6                       24.6\n 2 Changi   2024     1     2                     0.4                        0.4\n 3 Changi   2024     1     3                     8.8                        8.2\n 4 Changi   2024     1     4                    80.6                       17.6\n 5 Changi   2024     1     5                     4.2                        3  \n 6 Changi   2024     1     6                     0.6                        0.6\n 7 Changi   2024     1     7                    64                         12.8\n 8 Changi   2024     1     8                     0                          0  \n 9 Changi   2024     1     9                     2.6                        0.8\n10 Changi   2024     1    10                    63.2                       19  \n# ℹ 264 more rows\n# ℹ 9 more variables: highest_60_min_rainfall_mm &lt;dbl&gt;,\n#   highest_120_min_rainfall_mm &lt;dbl&gt;, mean_temperature_c &lt;dbl&gt;,\n#   maximum_temperature_c &lt;dbl&gt;, minimum_temperature_c &lt;dbl&gt;,\n#   mean_wind_speed_km_h &lt;dbl&gt;, max_wind_speed_km_h &lt;dbl&gt;, date &lt;date&gt;,\n#   Type &lt;chr&gt;\n\n\n\nChangi_train_imputed &lt;- Changi_train %&gt;%\n  mutate(mean_temperature_c = zoo::na.approx(mean_temperature_c))\n\nChangi_train_imputed %&gt;%\n  model(stl = STL(mean_temperature_c)) %&gt;%\n  components() %&gt;%\n  autoplot()"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#fitting-forecasting-model",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#fitting-forecasting-model",
+    "title": "Take-home_Ex3",
+    "section": "7.2 Fitting Forecasting Model",
+    "text": "7.2 Fitting Forecasting Model\n\n7.2.1 Fitting ETS Model\n\nETS(y ~ error(c(\"A\", \"M\")) \n    + trend(c(\"N\", \"A\", \"Ad\")) \n    + season(c(\"N\", \"A\", \"M\"))\n)\n\n&lt;ETS model definition&gt;\n\n\n\n\n7.2.2 Fitting simple ETS\n\nses &lt;- Changi_train_imputed %&gt;%\n  model(ETS(mean_temperature_c ~ error(\"A\") \n            + trend(\"N\") \n            + season(\"N\")))\nses\n\n# A mable: 1 x 2\n# Key:     station [1]\n  station `ETS(mean_temperature_c ~ error(\"A\") + trend(\"N\") + season(\"N\"))`\n  &lt;chr&gt;                                                             &lt;model&gt;\n1 Changi                                                       &lt;ETS(A,N,N)&gt;\n\n\n\n\n7.2.3 Check model assumptions\n\ngg_tsresiduals(ses)\n\n\n\n\n\n\n\n\n\n\n7.2.4 Model’s report\n\nses %&gt;%\n  report()\n\nSeries: mean_temperature_c \nModel: ETS(A,N,N) \n  Smoothing parameters:\n    alpha = 0.2852897 \n\n  Initial states:\n     l[0]\n 26.32362\n\n  sigma^2:  0.7308\n\n     AIC     AICc      BIC \n1456.047 1456.136 1466.887 \n\n\n\n\n7.2.5 Holt’s Linear Method\n\nChangi_Holt &lt;- Changi_train_imputed %&gt;%\n  model(`Holt's method` = \n          ETS(mean_temperature_c ~ error(\"A\") +\n                trend(\"A\") + \n                season(\"N\")))\nChangi_Holt %&gt;% report()\n\nSeries: mean_temperature_c \nModel: ETS(A,A,N) \n  Smoothing parameters:\n    alpha = 0.2807998 \n    beta  = 0.0001000422 \n\n  Initial states:\n     l[0]        b[0]\n 26.28793 0.008576169\n\n  sigma^2:  0.7356\n\n     AIC     AICc      BIC \n1459.812 1460.036 1477.878 \n\n\n\ngg_tsresiduals(Changi_Holt)\n\n\n\n\n\n\n\n\n\n\n7.2.6 Holt-Winters\n\nChangi_HW &lt;- Changi_train_imputed %&gt;%\n  model(\n    Additive = ETS(mean_temperature_c ~ error(\"A\") \n                   + trend(\"A\") \n                   + season(\"A\")),\n    Multiplicative = ETS(mean_temperature_c ~ error(\"M\") \n                         + trend(\"A\") \n                         + season(\"M\"))\n    )\n\nChangi_HW %&gt;% report()\n\n# A tibble: 2 × 10\n  station .model           sigma2 log_lik   AIC  AICc   BIC   MSE  AMSE    MAE\n  &lt;chr&gt;   &lt;chr&gt;             &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;\n1 Changi  Additive       0.738      -722. 1467. 1469. 1511. 0.708 0.793 0.653 \n2 Changi  Multiplicative 0.000962   -731. 1486. 1487. 1529. 0.755 0.813 0.0237\n\n\n\nmulti_ETS &lt;- Changi_train_imputed %&gt;%\n  model(`SES` = ETS(mean_temperature_c ~ error(\"A\") + \n                      trend(\"N\") + \n                      season(\"N\")),\n        `Holt`= ETS(mean_temperature_c ~ error(\"A\") +\n                      trend(\"A\") +\n                      season(\"N\")),\n        `damped Holt` = \n          ETS(mean_temperature_c ~ error(\"A\") +\n                trend(\"Ad\") + \n                season(\"N\")),\n        `WH_A` = ETS(\n          mean_temperature_c ~ error(\"A\") + \n            trend(\"A\") + \n            season(\"A\")),\n        `WH_M` = ETS(mean_temperature_c ~ error(\"M\") \n                         + trend(\"A\") \n                         + season(\"M\"))\n  )\n\n\nmulti_ETS %&gt;%\n  tidy()\n\n# A tibble: 35 × 4\n   station .model      term   estimate\n   &lt;chr&gt;   &lt;chr&gt;       &lt;chr&gt;     &lt;dbl&gt;\n 1 Changi  SES         alpha  0.285   \n 2 Changi  SES         l[0]  26.3     \n 3 Changi  Holt        alpha  0.281   \n 4 Changi  Holt        beta   0.000100\n 5 Changi  Holt        l[0]  26.3     \n 6 Changi  Holt        b[0]   0.00858 \n 7 Changi  damped Holt alpha  0.279   \n 8 Changi  damped Holt beta   0.000100\n 9 Changi  damped Holt phi    0.976   \n10 Changi  damped Holt l[0]  25.8     \n# ℹ 25 more rows\n\n\n\nmulti_ETS %&gt;% \n  report()\n\n# A tibble: 5 × 10\n  station .model        sigma2 log_lik   AIC  AICc   BIC   MSE  AMSE    MAE\n  &lt;chr&gt;   &lt;chr&gt;          &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;\n1 Changi  SES         0.731      -725. 1456. 1456. 1467. 0.725 0.817 0.659 \n2 Changi  Holt        0.736      -725. 1460. 1460. 1478. 0.725 0.815 0.653 \n3 Changi  damped Holt 0.735      -724. 1461. 1461. 1482. 0.722 0.810 0.648 \n4 Changi  WH_A        0.738      -722. 1467. 1469. 1511. 0.708 0.793 0.653 \n5 Changi  WH_M        0.000962   -731. 1486. 1487. 1529. 0.755 0.813 0.0237\n\n\n\nmulti_ETS %&gt;%\n  forecast(h = \"30 days\") %&gt;%\n  autoplot(Changi_train_imputed, \n           level = NULL)\n\n\n\n\n\n\n\n\n\nfit_autoETS &lt;- Changi_train_imputed %&gt;%\n  model(ETS(mean_temperature_c))\nfit_autoETS %&gt;% report()\n\nSeries: mean_temperature_c \nModel: ETS(A,N,N) \n  Smoothing parameters:\n    alpha = 0.2852897 \n\n  Initial states:\n     l[0]\n 26.32362\n\n  sigma^2:  0.7308\n\n     AIC     AICc      BIC \n1456.047 1456.136 1466.887 \n\n\n\ngg_tsresiduals(fit_autoETS)\n\n\n\n\n\n\n\n\n\n\n7.2.7 Forecasting future values\n\nfit_autoETS %&gt;%\n  forecast(h = \"30 days\") %&gt;%\n  autoplot(Changi_train_imputed)\n\n\n\n\n\n\n\n\n\n\n7.2.8 Visualising AutoETS model with ggplot2\n\nfc_autoETS &lt;- fit_autoETS %&gt;%\n  forecast(h = \"30 days\")\n\nChangi_train_imputed %&gt;%\n  ggplot(aes(x=`date`, \n             y=mean_temperature_c)) +\n  autolayer(fc_autoETS, \n            alpha = 0.6) +\n  geom_line(aes(\n    color = Type), \n    alpha = 0.8) + \n  geom_line(aes(\n    y = .mean, \n    colour = \"Forecast\"), \n    data = fc_autoETS) +\n  geom_line(aes(\n    y = .fitted, \n    colour = \"Fitted\"), \n    data = augment(fit_autoETS))"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#fitting-arima-model",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#fitting-arima-model",
+    "title": "Take-home_Ex3",
+    "section": "8.1 Fitting ARIMA model",
+    "text": "8.1 Fitting ARIMA model\n\nfit_autoARIMA &lt;- Changi_train_imputed %&gt;%\n  model(ARIMA(mean_temperature_c))\nreport(fit_autoARIMA)\n\nSeries: mean_temperature_c \nModel: ARIMA(1,1,3)(2,0,0)[7] \n\nCoefficients:\n          ar1     ma1      ma2      ma3     sar1     sar2\n      -0.9599  0.4075  -0.7461  -0.2559  -0.0670  -0.1490\ns.e.   0.0364  0.0694   0.0525   0.0632   0.0676   0.0647\n\nsigma^2 estimated as 0.6832:  log likelihood=-333.01\nAIC=680.02   AICc=680.44   BIC=705.29\n\n\n\nChangi_training &lt;- Changi_train_imputed %&gt;% filter(Type == \"Training\")\n\n\nChangi_multi &lt;- Changi_training %&gt;%\n  model(\n    ets = ETS(mean_temperature_c),\n    arima = ARIMA(mean_temperature_c)\n  )\n\n\nChangi_multi %&gt;%\n  glance()\n\n# A tibble: 2 × 12\n  station .model sigma2 log_lik   AIC  AICc   BIC    MSE   AMSE    MAE ar_roots\n  &lt;chr&gt;   &lt;chr&gt;   &lt;dbl&gt;   &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt; &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt;  &lt;dbl&gt; &lt;list&gt;  \n1 Changi  ets     0.731   -725. 1456. 1456. 1467.  0.725  0.817  0.659 &lt;NULL&gt;  \n2 Changi  arima   0.683   -333.  680.  680.  705. NA     NA     NA     &lt;cpl&gt;   \n# ℹ 1 more variable: ma_roots &lt;list&gt;\n\n\n\nChangi_forecast &lt;- Changi_multi %&gt;%\n  forecast(h = \"30 days\")\n\n\nChangi_forecast %&gt;%\n  autoplot(Changi_training)"
+  },
+  {
+    "objectID": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#multi-station-arima",
+    "href": "Take-home_Ex/Take-home_Ex3/Take-home_Ex3.html#multi-station-arima",
+    "title": "Take-home_Ex3",
+    "section": "8.2 Multi station ARIMA",
+    "text": "8.2 Multi station ARIMA\n\nts_data %&gt;% model(ARIMA(mean_temperature_c)) %&gt;%\n  forecast(h = \"7 days\") %&gt;% \n  autoplot(ts_data)"
   }
 ]
