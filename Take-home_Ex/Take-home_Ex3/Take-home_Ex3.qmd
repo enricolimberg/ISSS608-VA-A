@@ -15,7 +15,7 @@ execute:
 # 1.0 Install and Load R packages
 
 ```{r}
-pacman::p_load(tidyverse,tsibble,feasts,fable,seasonal,tidymodels,timetk,modeltime,forecast,ggplot2)
+pacman::p_load(tidyverse,tsibble,feasts,fable,seasonal,tidymodels,timetk,modeltime,forecast,ggplot2,tidyr,dplyr,lubridate,tsibble)
 ```
 
 # 2.0 Import Data
@@ -57,9 +57,44 @@ ts_data <- weather %>%
 ts_data
 ```
 
+```{r}
+write_csv(ts_data, "ts_data.csv")
+```
+
+## 3.4 Convert to time-series (weekly aggregation)
+
+```{r}
+ts_data_weekly <- weather %>%
+  as_tsibble(index = date, key = station) %>%
+  fill_gaps() %>%
+  mutate(week = floor_date(date, "week")) %>%
+  group_by(station, week) %>%
+  summarise(
+    mean_temp = mean(mean_temperature_c, na.rm = TRUE), 
+    max_temp = if_else(any(!is.na(mean_temperature_c)), max(mean_temperature_c, na.rm = TRUE), NA_real_),    
+    min_temp = if_else(any(!is.na(mean_temperature_c)), min(mean_temperature_c, na.rm = TRUE), NA_real_),
+    total_rainfall = sum(daily_rainfall_total_mm, na.rm = TRUE)
+  ) %>%
+  ungroup() %>%
+  distinct(station, week, .keep_all = TRUE) %>%
+  as_tsibble(index = week, key = station)
+```
+
+```{r}
+ts_data_weekly$mean_temp[is.nan(ts_data_weekly$mean_temp)] <- NA
+```
+
+```{r}
+ts_data_weekly
+```
+
+```{r}
+write_csv(ts_data_weekly, "ts_data_weekly.csv")
+```
+
 # 4.0 Time-Series Visualization
 
-## 4.1 Single time-series
+## 4.1 Single time-series (daily)
 
 ```{r}
 ts_data %>%
@@ -69,7 +104,17 @@ ts_data %>%
   geom_line(size = 0.5)
 ```
 
-## 4.2 Multiple time-series
+## 4.2 Time Series (Weekly)
+
+```{r}
+ts_data_weekly %>%
+  filter(station == "Paya Lebar") %>%
+  ggplot(aes(x = week,
+             y = mean_temp))+
+  geom_line(size = 0.5)
+```
+
+## 4.3 Multiple time-series
 
 ```{r, fig.height=6}
 ggplot(data = ts_data,
@@ -82,7 +127,18 @@ ggplot(data = ts_data,
   labs(title = "Mean Temperature Over Time", y = "Temperature (°C)")
 ```
 
-## 4.3 facet_wrap() for effective comparison of multiple line graph
+```{r,fig.height=6}
+ggplot(data = ts_data_weekly,
+       aes(x = week,
+           y = mean_temp,
+           color = station))+
+  geom_line(size = 0.5) +
+  theme(legend.position = "bottom",
+        legend.box.spacing = unit(0.5, "cm"))+
+  labs(title = "Mean Temperature Over Time (Weekly)", y = "Temperature (°C)")
+```
+
+## 4.4 facet_wrap() for effective comparison of multiple line graph
 
 ```{r,fig.height=10}
 ggplot(data = ts_data, 
@@ -143,10 +199,9 @@ ts_data %>%
   autoplot()
 ```
 
-7.0 STL Decomposition
+# 7.0 STL Decomposition
 
 ```{r}
-
 ts_data <- ts_data %>%
   fill_gaps() %>%
   mutate(mean_temperature_c = na.interp(mean_temperature_c))
@@ -156,7 +211,7 @@ ts_data <- ts_data %>%
 ts_data %>% count(is.na(mean_temperature_c))
 ```
 
-```{r}
+```{r,fig.height=6}
 ts_data %>%
   filter(!is.na(mean_temperature_c)) %>%
   model(STL(mean_temperature_c ~ season(window = "periodic"))) %>%
@@ -164,35 +219,9 @@ ts_data %>%
   autoplot()
 ```
 
-# **5.0 STL Decomposition**
+# 8.0 Visual Forecasting
 
-```{r, fig.width=10,fig.height=10}
-ts_data %>%
-  fill_gaps() %>%  # Convert implicit gaps to explicit missing values
-  mutate(mean_temperature_c = na.interp(mean_temperature_c)) %>%  # Interpolate missing values
-  filter(station == "Paya Lebar") %>%
-  model(STL(mean_temperature_c ~ season(window = "periodic"))) %>%
-  components() %>%
-  autoplot()
-```
-
-# **6.0 Classical Decomposition**
-
-```{r}
-ts_data %>%
-  fill_gaps() %>%  # Convert implicit gaps to explicit missing values
-  mutate(mean_temperature_c = na.interp(mean_temperature_c)) %>%
-  filter(station == "Changi") %>%
-  model(
-    classical_decomposition(
-      mean_temperature_c, type = "additive")) %>%
-  components() %>%
-  autoplot()
-```
-
-# 7.0 Visual Forecasting
-
-## 7.1 Data Sampling
+## 8.1 Data Sampling
 
 ```{r}
 Changi_ts <- ts_data %>%
@@ -221,9 +250,9 @@ Changi_train_imputed %>%
   autoplot()
 ```
 
-## 7.2 Fitting Forecasting Model
+## 8.2 Fitting Forecasting Model
 
-### 7.2.1 Fitting ETS Model
+### 8.2.1 Fitting ETS Model
 
 ```{r}
 ETS(y ~ error(c("A", "M")) 
@@ -232,7 +261,7 @@ ETS(y ~ error(c("A", "M"))
 )
 ```
 
-### 7.2.2 Fitting simple ETS
+### 8.2.2 Fitting simple ETS
 
 ```{r}
 ses <- Changi_train_imputed %>%
@@ -242,20 +271,20 @@ ses <- Changi_train_imputed %>%
 ses
 ```
 
-### 7.2.3 Check model assumptions
+### 8.2.3 Check model assumptions
 
 ```{r,fig.height=6}
 gg_tsresiduals(ses)
 ```
 
-### 7.2.4 Model's report
+### 8.2.4 Model's report
 
 ```{r}
 ses %>%
   report()
 ```
 
-### 7.2.5 Holt's Linear Method
+### 8.2.5 Holt's Linear Method
 
 ```{r}
 Changi_Holt <- Changi_train_imputed %>%
@@ -270,7 +299,7 @@ Changi_Holt %>% report()
 gg_tsresiduals(Changi_Holt)
 ```
 
-### 7.2.6 Holt-Winters
+### 8.2.6 Holt-Winters
 
 ```{r}
 Changi_HW <- Changi_train_imputed %>%
@@ -335,7 +364,7 @@ fit_autoETS %>% report()
 gg_tsresiduals(fit_autoETS)
 ```
 
-### 7.2.7 Forecasting future values
+### 8.2.7 Forecasting future values
 
 ```{r}
 fit_autoETS %>%
@@ -343,7 +372,7 @@ fit_autoETS %>%
   autoplot(Changi_train_imputed)
 ```
 
-### 7.2.8 **Visualising AutoETS model with ggplot2**
+### 8.2.8 **Visualising AutoETS model with ggplot2**
 
 ```{r}
 fc_autoETS <- fit_autoETS %>%
@@ -367,9 +396,9 @@ Changi_train_imputed %>%
     data = augment(fit_autoETS))
 ```
 
-# 8.0 ARIMA Method
+# 9.0 ARIMA Method
 
-## 8.1 Fitting ARIMA model
+## 9.1 Fitting ARIMA model
 
 ```{r}
 fit_autoARIMA <- Changi_train_imputed %>%
@@ -404,7 +433,7 @@ Changi_forecast %>%
   autoplot(Changi_training)
 ```
 
-## 8.2 Multi station ARIMA
+## 9.2 Multi station ARIMA
 
 ```{r, fig.height=20,fig.width=10}
 ts_data %>% model(ARIMA(mean_temperature_c)) %>%

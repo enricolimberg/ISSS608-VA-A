@@ -1,0 +1,12 @@
+name: ShinyProject
+title: ShinyProject
+username: enricolimberg
+account: enricolimberg
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 14366917
+bundleId: 10022282
+url: https://enricolimberg.shinyapps.io/ShinyProject/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
